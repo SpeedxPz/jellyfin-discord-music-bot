@@ -97,6 +97,10 @@ export class DiscordVoiceService {
       this.voiceConnection = getVoiceConnection(member.guild.id);
     }
 
+    if (this.voiceConnection !== undefined) {
+      this.voiceConnection.subscribe(this.createAndReturnOrGetAudioPlayer());
+    }
+
     return {
       success: true,
       reply: {},
@@ -185,6 +189,10 @@ export class DiscordVoiceService {
     return true;
   }
 
+  isHaveVoiceConnection(): boolean {
+    return this.voiceConnection !== undefined;
+  }
+
   disconnect(): GenericTryHandler {
     if (this.voiceConnection === undefined) {
       return {
@@ -239,7 +247,6 @@ export class DiscordVoiceService {
         },
       });
       this.attachEventListenersToAudioPlayer();
-      this.voiceConnection.subscribe(this.audioPlayer);
       return this.audioPlayer;
     }
 

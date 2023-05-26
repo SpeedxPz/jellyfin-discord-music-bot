@@ -25,13 +25,16 @@ export class StopPlaybackCommand {
   @Handler()
   async handler(@IA() interaction: CommandInteraction): Promise<void> {
     const hasActiveTrack = this.playbackService.getPlaylistOrDefault();
-    const title = hasActiveTrack
-      ? 'Playback stopped successfully'
-      : 'Playback failed to stop';
-    const description = hasActiveTrack
-      ? 'In addition, your playlist has been cleared'
-      : 'There is no active track in the queue';
-    if (hasActiveTrack) {
+    const hasVoiceConnection = this.discordVoiceService.isHaveVoiceConnection();
+    const title =
+      hasActiveTrack && hasVoiceConnection
+        ? 'Playback stopped successfully'
+        : 'Playback failed to stop';
+    const description =
+      hasActiveTrack && hasVoiceConnection
+        ? 'In addition, your playlist has been cleared'
+        : 'There is no active track in the queue';
+    if (hasActiveTrack && hasVoiceConnection) {
       this.discordVoiceService.stop(false);
       this.playbackService.getPlaylistOrDefault().clear();
     }
