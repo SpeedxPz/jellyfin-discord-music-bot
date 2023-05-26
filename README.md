@@ -17,11 +17,7 @@
   <a href='https://ko-fi.com/A0A42YZ7W' target='_blank'><img src="https://img.shields.io/badge/-Buy%20me%20a%20coffee-f1f1f1?style=for-the-badge&logo=kofi" alt="badge" /></a>
   <br/>
   <br/>
-  <img src="https://github.com/manuel-rw/jellyfin-discord-music-bot/actions/workflows/docker.yml/badge.svg?branch=master" />
-  <img src="https://deepsource.io/gh/manuel-rw/jellyfin-discord-music-bot.svg/?label=active+issues&show_trend=true&token=vhfm8cbHaoCyXTf7Gfs9FweR)](https://deepsource.io/gh/manuel-rw/jellyfin-discord-music-bot/?ref=repository-badge" />
 </p>
-
-<br/>
 <hr/>
 <br/>
 
@@ -48,6 +44,9 @@ This project was originally started by [KGT1 on Github](https://github.com/KGT1/
 Please check out the Wiki section in the repository for installation instructions:
 
 https://github.com/manuel-rw/jellyfin-discord-music-bot/wiki
+
+If you want to use this repo build use this image
+```registry.takumipro.dev/public/jellyfin-bot:0.0.8-r.1```
 
 
 ## 💻 Development
