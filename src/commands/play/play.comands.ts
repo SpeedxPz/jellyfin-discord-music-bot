@@ -168,11 +168,18 @@ export class PlayItemCommand {
       return;
     }
 
-    await interaction.respond(
-      hints.map((hint) => ({
-        name: hint.toString(),
+    const hintList = hints.map((hint) => {
+      let title = hint.toString();
+      if (title.length > 100) {
+        title = `${title.substring(0, 90)}...`;
+      }
+
+      return {
+        name: title,
         value: `native-${hint.getId()}`,
-      })),
-    );
+      };
+    });
+
+    await interaction.respond(hintList);
   }
 }
