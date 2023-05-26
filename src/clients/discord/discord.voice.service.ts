@@ -139,6 +139,7 @@ export class DiscordVoiceService {
   stop(force: boolean): boolean {
     const stopped = this.createAndReturnOrGetAudioPlayer().stop(force);
     this.eventEmitter.emit('playback.state.stop');
+    this.audioResource = undefined;
     return stopped;
   }
 

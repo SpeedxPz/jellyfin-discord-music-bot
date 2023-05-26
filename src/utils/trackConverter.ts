@@ -2,14 +2,16 @@ import { JellyfinSearchService } from 'src/clients/jellyfin/jellyfin.search.serv
 import { SearchHint } from 'src/models/search/SearchHint';
 import { Track } from 'src/models/shared/Track';
 
-export const convertToTracks = (
+export const convertToTracks = async (
   hints: SearchHint[],
   jellyfinSearchService: JellyfinSearchService,
-): Track[] => {
+): Promise<Track[]> => {
   let tracks: Track[] = [];
-  hints.forEach(async (hint) => {
+
+  for (const hint of hints) {
     const searchedTracks = await hint.toTracks(jellyfinSearchService);
     tracks = [...tracks, ...searchedTracks];
-  });
+  }
+
   return tracks;
 };
