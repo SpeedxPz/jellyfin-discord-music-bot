@@ -46,7 +46,7 @@ Please check out the Wiki section in the repository for installation instruction
 https://github.com/manuel-rw/jellyfin-discord-music-bot/wiki
 
 If you want to use this repo build use this image
-```registry.takumipro.dev/public/jellyfin-bot:0.0.8-r.1```
+```registry.takumipro.dev/public/jellyfin-bot:0.0.8-r.3```
 
 
 ## 💻 Development
