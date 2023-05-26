@@ -30,6 +30,7 @@ export class SearchHint {
     const schema = z.object({
       Id: z.string(),
       Name: z.string(),
+      AlbumArtist: z.string(),
       RunTimeTicks: z.number(),
     });
 
@@ -43,9 +44,13 @@ export class SearchHint {
       );
     }
 
+    let itemName = result.data.Name;
+    if (result.data.AlbumArtist != '') {
+      itemName = `${result.data.Name} (${result.data.AlbumArtist})`;
+    }
     return new SearchHint(
       result.data.Id,
-      result.data.Name,
+      itemName,
       result.data.RunTimeTicks / 10000,
     );
   }

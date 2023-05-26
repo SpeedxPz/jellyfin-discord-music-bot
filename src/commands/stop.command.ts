@@ -33,7 +33,7 @@ export class StopPlaybackCommand {
       : 'There is no active track in the queue';
     if (hasActiveTrack) {
       this.discordVoiceService.stop(false);
-      // this.playbackService.getPlaylistOrDefault().clear();
+      this.playbackService.getPlaylistOrDefault().clear();
     }
 
     await interaction.reply({

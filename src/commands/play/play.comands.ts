@@ -51,7 +51,7 @@ export class PlayItemCommand {
     @InteractionEvent(SlashCommandPipe) dto: PlayCommandParams,
     @IA() interaction: CommandInteraction,
   ) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ ephemeral: false });
 
     const baseItems = PlayCommandParams.getBaseItemKinds(dto.type);
 
@@ -76,7 +76,7 @@ export class PlayItemCommand {
               '- Check for any misspellings\n- Grant me access to your desired libraries\n- Avoid special characters',
           }),
         ],
-        ephemeral: true,
+        ephemeral: false,
       });
       return;
     }
@@ -114,9 +114,11 @@ export class PlayItemCommand {
     await interaction.followUp({
       embeds: [
         this.discordMessageService.buildMessage({
-          title: `Added ${this.playbackService
+          title: `Added ${
+            tracks.length
+          } tracks tracks to your playlist (${this.playbackService
             .getPlaylistOrDefault()
-            .getLength()} tracks to your playlist (${formatMillisecondsAsHumanReadable(
+            .getLength()} tracks) (${formatMillisecondsAsHumanReadable(
             reducedDuration,
           )})`,
           mixin(embedBuilder) {
@@ -127,7 +129,7 @@ export class PlayItemCommand {
           },
         }),
       ],
-      ephemeral: true,
+      ephemeral: false,
     });
   }
 
