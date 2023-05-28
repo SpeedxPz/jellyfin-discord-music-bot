@@ -28,7 +28,7 @@ import { PlaybackService } from '../../playback/playback.service';
 import { formatMillisecondsAsHumanReadable } from '../../utils/timeUtils';
 
 import { defaultMemberPermissions } from 'src/utils/environment';
-import { PlayCommandParams, SearchType } from './play.params.ts';
+import { PlayCommandParams, SearchType, Mode } from './play.params.ts';
 
 @Injectable()
 @Command({
@@ -96,7 +96,7 @@ export class PlayItemCommand {
       return;
     }
 
-    const tracks = await item.toTracks(this.jellyfinSearchService);
+    let tracks = await item.toTracks(this.jellyfinSearchService);
     this.logger.debug(`Extracted ${tracks.length} tracks from the search item`);
     const reducedDuration = tracks.reduce(
       (sum, item) => sum + item.duration,
@@ -105,6 +105,14 @@ export class PlayItemCommand {
     this.logger.debug(
       `Adding ${tracks.length} tracks with a duration of ${reducedDuration} ticks`,
     );
+
+    if (dto.mode == Mode.Shuffle) {
+      tracks = tracks
+        .map((value) => ({ value, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value);
+    }
+
     this.playbackService.getPlaylistOrDefault().enqueueTracks(tracks);
 
     const remoteImages = tracks.flatMap((track) => track.getRemoteImages());
@@ -116,11 +124,11 @@ export class PlayItemCommand {
         this.discordMessageService.buildMessage({
           title: `Added ${
             tracks.length
-          } tracks tracks to your playlist (${this.playbackService
-            .getPlaylistOrDefault()
-            .getLength()} tracks) (${formatMillisecondsAsHumanReadable(
+          } tracks (${formatMillisecondsAsHumanReadable(
             reducedDuration,
-          )})`,
+          )}) to your playlist (${this.playbackService
+            .getPlaylistOrDefault()
+            .getLength()} tracks)`,
           mixin(embedBuilder) {
             if (!remoteImage?.Url) {
               return embedBuilder;

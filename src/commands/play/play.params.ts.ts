@@ -8,6 +8,11 @@ export enum SearchType {
   Playlist = 2,
 }
 
+export enum Mode {
+  Normal = 0,
+  Shuffle = 1,
+}
+
 export class PlayCommandParams {
   @Param({
     required: true,
@@ -19,6 +24,10 @@ export class PlayCommandParams {
   @Choice(SearchType)
   @Param({ description: 'Desired item type', type: ParamType.INTEGER })
   type: SearchType | undefined;
+
+  @Choice(Mode)
+  @Param({ description: 'Add mode', type: ParamType.INTEGER })
+  mode: Mode | undefined;
 
   static getBaseItemKinds(type: SearchType | undefined) {
     switch (type) {
