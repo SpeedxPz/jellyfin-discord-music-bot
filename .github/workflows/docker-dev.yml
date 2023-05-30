@@ -13,10 +13,6 @@ on:
 
   workflow_dispatch:
 
-env:
-  REGISTRY: ${{ secrets.REGISTRY_URL }}
-  IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
-
 jobs:
   build-and-push-image:
     runs-on: ubuntu-latest
