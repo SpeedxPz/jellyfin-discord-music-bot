@@ -14,7 +14,7 @@ updates:
       prefix: "⬆️" # prefix with gitmoji
       include: "scope" # list updated dependencies in message
     assignees:
-      - "manuel-rw"
+      - "SpeedxPz"
   - package-ecosystem: "docker" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
@@ -24,7 +24,7 @@ updates:
       prefix: "🚀" # prefix with gitmoji
       include: "scope" # list updated dependencies in message
     assignees:
-      - "manuel-rw"
+      - "SpeedxPz"
   - package-ecosystem: "github-actions"
     directory: /.github
     schedule:
@@ -34,5 +34,5 @@ updates:
       prefix: "👷" # prefix with gitmoji
       include: "scope" # list updated dependencies in message
     assignees:
-      - "manuel-rw"
+      - "SpeedxPz"
 

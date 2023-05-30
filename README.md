@@ -8,16 +8,9 @@
   <p align="center">A simple <a href="https://discord.com" target="_blank">Discord</a> bot that enables you to broadcast<br/>your <a href="https://jellyfin.org/" target="_blank">Jellyfin Media Server</a> music collection to voice channels.<br/>It's Open Source and can easily be hosted by yourself!</p>
 
 <p align="center">
-  <small>Thanky you <a href="https://github.com/KGT1/jellyfin-discord-music-bot/">KGT1</a> for starting this project!<br/>This is a fork of their original repository and re-uses some of their code.</small>
+  <small>Thanky you <a href="https://github.com/manuel-rw/jellyfin-discord-music-bot/">manuel-rw</a>, <a href="https://github.com/KGT1/jellyfin-discord-music-bot/">KGT1</a> for starting this project!<br/>This is a fork of their original repository because i need to big modify them to match my use case</small>
 </p>
 
-<p align="center">
-  <a href="https://github.com/manuel-rw/jellyfin-discord-music-bot/wiki/%F0%9F%9A%80-Installation"><img src="https://img.shields.io/badge/-Installation%20Guide-7289da?style=for-the-badge&logo=markdown" alt="badge" /></a>
-  <a href="https://discord.gg/hRHZ3q3VDX"><img src="https://img.shields.io/badge/-Community%20Discord-7289da?style=for-the-badge&logo=discord" alt="badge" /></a>
-  <a href='https://ko-fi.com/A0A42YZ7W' target='_blank'><img src="https://img.shields.io/badge/-Buy%20me%20a%20coffee-f1f1f1?style=for-the-badge&logo=kofi" alt="badge" /></a>
-  <br/>
-  <br/>
-</p>
 <hr/>
 <br/>
 
@@ -30,12 +23,13 @@
 - Typesafe code for quicker development and less bugs
 - Supports ``Music``, ``Playlists`` and ``Albums`` from your Jellyfin instance
 
-## 📌 About this project
-This project was originally started by [KGT1 on Github](https://github.com/KGT1/jellyfin-discord-music-bot/) in 2020. I came accross this project in late 2021, when wanted to enjoy my music on Discord. I never got it to run as I wanted it to. Since the original project was created under the MIT license, I decided to make a fork in 2022 with my own version. Although this project re-uses some code of the original project, it has been completly rewritten in other parts using NestJs and features now a module-based approach.
+## 📌 About this fork
+This project was fork from [manual-rw on Github](https://github.com/manuel-rw/jellyfin-discord-music-bot/). I came across and interested in this project,
+By the way, The many things is missing from that repo. So i made a fork and try to do my best to fit this bot to my use cases.
 
 ## ⛔ Limitations
 
-- Bot does not support shards. This means, you cannot use it in multiple servers concurrently.
+- Bot does not support shards (for now). This means, you cannot use it in multiple servers concurrently.
 - Album covers are not visible, unless they are remote (eg. provided by external metadata provider)
 - Streaming any video content in voice channels (See [this issue](https://github.com/discordjs/discord.js/issues/4116))
 
@@ -46,7 +40,7 @@ Please check out the Wiki section in the repository for installation instruction
 https://github.com/manuel-rw/jellyfin-discord-music-bot/wiki
 
 If you want to use this repo build use this image
-```registry.takumipro.dev/public/jellyfin-bot:0.0.8-r.3```
+```registry.takumipro.dev/public/jellyfin-discord-music-bot:latest```
 
 
 ## 💻 Development
@@ -62,3 +56,4 @@ I'm open to any contributions to this project. You can start contributing using 
 - https://jellyfin.org/
 - https://github.com/KGT1/jellyfin-discord-music-bot
 - https://gitmoji.dev/
+- https://github.com/manuel-rw/jellyfin-discord-music-bot

@@ -1,31 +1,19 @@
-name: Container image - Development
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+name: Publish Docker image
 on:
-  push:
-    branches: [dev]
-    paths-ignore:
-      - '.github/**'
-      - 'images/'
-      - '*.md'
-
-  workflow_dispatch:
-
+  release:
+    types: [published]
 env:
   REGISTRY: ${{ secrets.REGISTRY_URL }}
   IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
-
 jobs:
-  build-and-push-image:
+  build-and-push-registry:
+    name: Build docker image and push to registry
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
-      contents: read
     steps:
       - name: Check out the repo
         uses: actions/checkout@v3
+        with:
+          lfs: true
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v4
@@ -34,7 +22,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=raw,value=dev
+            type=raw,value=latest
             type=pep440,pattern={{version}}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
