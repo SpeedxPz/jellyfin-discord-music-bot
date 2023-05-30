@@ -35,12 +35,14 @@ By the way, The many things is missing from that repo. So i made a fork and try 
 
 ## 🚀 Installation
 
+Docker Image
+```registry.takumipro.dev/public/jellyfin-discord-music-bot:latest```
+
 Please check out the Wiki section in the repository for installation instructions:
 
 https://github.com/manuel-rw/jellyfin-discord-music-bot/wiki
 
-If you want to use this repo build use this image
-```registry.takumipro.dev/public/jellyfin-discord-music-bot:latest```
+
 
 
 ## 💻 Development
