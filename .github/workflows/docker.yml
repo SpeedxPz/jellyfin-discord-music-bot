@@ -5,7 +5,7 @@ name: Container image - Production
 # documentation.
 on:
   push:
-    branches: [master]
+    branches: [main]
     paths-ignore:
 #      - '.github/**'
       - 'images/'
