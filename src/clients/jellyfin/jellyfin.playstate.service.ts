@@ -85,12 +85,14 @@ export class JellyinPlaystateService {
     this.logger.debug(
       `Reporting playback finish on track '${jellyfin.track.id}'`,
     );
-    await jellyfin.playstateApi.reportPlaybackStopped({
-      playbackStopInfo: {
-        ItemId: jellyfin.track.id,
-        PositionTicks: jellyfin.progress * 10000,
-      },
-    });
+    try {
+      await jellyfin.playstateApi.reportPlaybackStopped({
+        playbackStopInfo: {
+          ItemId: jellyfin.track.id,
+          PositionTicks: jellyfin.progress * 10000,
+        },
+      });
+    } catch {}
   }
 
   @OnEvent('discord.audioplayer.event.paused')
@@ -104,13 +106,15 @@ export class JellyinPlaystateService {
       return;
     }
 
-    await jellyfin.playstateApi.reportPlaybackProgress({
-      playbackProgressInfo: {
-        IsPaused: true,
-        ItemId: jellyfin.track.id,
-        PositionTicks: jellyfin.progress * 10000,
-      },
-    });
+    try {
+      await jellyfin.playstateApi.reportPlaybackProgress({
+        playbackProgressInfo: {
+          IsPaused: true,
+          ItemId: jellyfin.track.id,
+          PositionTicks: jellyfin.progress * 10000,
+        },
+      });
+    } catch {}
   }
 
   @OnEvent('discord.audioplayer.event.resume')
@@ -124,13 +128,15 @@ export class JellyinPlaystateService {
       return;
     }
 
-    await jellyfin.playstateApi.reportPlaybackProgress({
-      playbackProgressInfo: {
-        IsPaused: false,
-        ItemId: jellyfin.track.id,
-        PositionTicks: jellyfin.progress * 10000,
-      },
-    });
+    try {
+      await jellyfin.playstateApi.reportPlaybackProgress({
+        playbackProgressInfo: {
+          IsPaused: false,
+          ItemId: jellyfin.track.id,
+          PositionTicks: jellyfin.progress * 10000,
+        },
+      });
+    } catch {}
   }
 
   @OnEvent('discord.audioplayer.event.play.progress')
@@ -139,14 +145,16 @@ export class JellyinPlaystateService {
     if (!jellyfin.initialized) return;
     jellyfin.progress = event.progress;
 
-    jellyfin.playstateApi.reportPlaybackProgress({
-      playbackProgressInfo: {
-        ItemId: jellyfin.track.id,
-        PositionTicks: jellyfin.progress * 10000,
-      },
-    });
-    this.logger.verbose(
-      `Reported playback progress ${jellyfin.progress} to Jellyfin for item ${jellyfin.track.id}`,
-    );
+    try {
+      jellyfin.playstateApi.reportPlaybackProgress({
+        playbackProgressInfo: {
+          ItemId: jellyfin.track.id,
+          PositionTicks: jellyfin.progress * 10000,
+        },
+      });
+      this.logger.verbose(
+        `Reported playback progress ${jellyfin.progress} to Jellyfin for item ${jellyfin.track.id}`,
+      );
+    } catch {}
   }
 }

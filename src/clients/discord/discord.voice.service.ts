@@ -246,7 +246,7 @@ export class DiscordVoiceService {
     });
   }
 
-  @Interval(500)
+  @Interval(1000)
   private checkAudioResourcePlayback() {
     for (const [key, value] of Object.entries(this.voiceSession)) {
       const voice = this.voiceSession[key];

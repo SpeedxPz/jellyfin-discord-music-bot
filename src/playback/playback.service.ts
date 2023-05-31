@@ -38,6 +38,10 @@ export class PlaybackService {
   }
 
   async disconnect(guildId: string) {
+    const instance = this.getOrCreatePlaybackInstance(guildId);
+    instance.playing = false;
+    instance.pause = false;
+    instance.queue.clear();
     await this.jellyfinService.disconnect(guildId);
   }
 
