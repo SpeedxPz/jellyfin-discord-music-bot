@@ -1,14 +1,9 @@
 import { Command, Handler, IA } from '@discord-nestjs/core';
-import { Jellyfin } from '@jellyfin/sdk';
-
 import { Injectable } from '@nestjs/common/decorators';
-
 import { CommandInteraction, Guild } from 'discord.js';
 import { DiscordMessageService } from 'src/clients/discord/discord.message.service';
 import { DiscordVoiceService } from 'src/clients/discord/discord.voice.service';
-import { JellyfinService } from 'src/clients/jellyfin/jellyfin.service';
 import { PlaybackService } from 'src/playback/playback.service';
-
 import { defaultMemberPermissions } from 'src/utils/environment';
 
 @Injectable()

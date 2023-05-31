@@ -1,117 +1,152 @@
-// import { Api } from '@jellyfin/sdk';
-// import { PlaystateApi } from '@jellyfin/sdk/lib/generated-client/api/playstate-api';
-// import { SessionApi } from '@jellyfin/sdk/lib/generated-client/api/session-api';
-// import {
-//   BaseItemKind,
-//   GeneralCommandType,
-// } from '@jellyfin/sdk/lib/generated-client/models';
-// import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
-// import { getSessionApi } from '@jellyfin/sdk/lib/utils/api/session-api';
+import { Api } from '@jellyfin/sdk';
+import {
+  BaseItemKind,
+  GeneralCommandType,
+} from '@jellyfin/sdk/lib/generated-client/models';
+import { getPlaystateApi } from '@jellyfin/sdk/lib/utils/api/playstate-api';
+import { getSessionApi } from '@jellyfin/sdk/lib/utils/api/session-api';
 
-// import { Injectable, Logger } from '@nestjs/common';
-// import { OnEvent } from '@nestjs/event-emitter';
-// import { Interval } from '@nestjs/schedule';
-// import { Track } from '../../models/shared/Track';
+import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { DiscordPlayEvent } from 'src/models/discord/DiscordPlayEvent';
+import { DiscordProgressEvent } from 'src/models/discord/DiscordProgressEvent';
+import { GuildJellyfinPlayState } from 'src/models/jellyfin/GuildJellyfinPlayState';
+import { JellyfinTrack } from 'src/models/shared/JellyfinTrack';
 
-// import { PlaybackService } from '../../playback/playback.service';
+@Injectable()
+export class JellyinPlaystateService {
+  private readonly logger = new Logger(JellyinPlaystateService.name);
+  private jellyfinSession: { [key: string]: GuildJellyfinPlayState };
 
-// @Injectable()
-// export class JellyinPlaystateService {
-//   private playstateApi: PlaystateApi;
-//   private sessionApi: SessionApi;
+  constructor() {
+    this.jellyfinSession = {};
+  }
 
-//   constructor(private readonly playbackService: PlaybackService) {}
+  getOrCreateJellyfinSession(guildId: string): GuildJellyfinPlayState {
+    if (!(guildId in this.jellyfinSession)) {
+      this.jellyfinSession[guildId] = new GuildJellyfinPlayState();
+      this.jellyfinSession[guildId].id = guildId;
+    }
+    return this.jellyfinSession[guildId];
+  }
 
-//   private readonly logger = new Logger(JellyinPlaystateService.name);
+  async initializePlayState(guildId: string, api: Api) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    jellyfin.playstateApi = getPlaystateApi(api);
+    jellyfin.sessionApi = getSessionApi(api);
+    await this.reportCapabilities(guildId);
+    jellyfin.initialized = true;
+  }
 
-//   async initializePlayState(api: Api) {
-//     this.initializeApis(api);
-//     await this.reportCapabilities();
-//   }
+  async destroy(guildId: string) {
+    if (guildId in this.jellyfinSession) {
+      delete this.jellyfinSession[guildId];
+    }
+  }
 
-//   private async initializeApis(api: Api) {
-//     this.sessionApi = getSessionApi(api);
-//     this.playstateApi = getPlaystateApi(api);
-//   }
+  private async reportCapabilities(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    await jellyfin.sessionApi.postCapabilities({
+      playableMediaTypes: [BaseItemKind[BaseItemKind.Audio]],
+      supportsMediaControl: true,
+      supportedCommands: [
+        GeneralCommandType.Play,
+        GeneralCommandType.PlayState,
+      ],
+    });
 
-//   private async reportCapabilities() {
-//     await this.sessionApi.postCapabilities({
-//       playableMediaTypes: [BaseItemKind[BaseItemKind.Audio]],
-//       supportsMediaControl: true,
-//       supportedCommands: [
-//         GeneralCommandType.Play,
-//         GeneralCommandType.PlayState,
-//       ],
-//     });
+    this.logger.debug(
+      `[${jellyfin.id}] Reported playback capabilities sucessfully`,
+    );
+  }
 
-//     this.logger.debug('Reported playback capabilities sucessfully');
-//   }
+  @OnEvent('discord.audioplayer.event.play.started')
+  private async onPlaybackNewTrack(event: DiscordPlayEvent) {
+    const jellyfin = this.getOrCreateJellyfinSession(event.guild_id);
+    if (!jellyfin.initialized) return;
+    if (event.track instanceof JellyfinTrack) {
+      this.logger.debug(
+        `Reporting playback start on track '${event.track.id}'`,
+      );
+      jellyfin.track = event.track;
+      await jellyfin.playstateApi.reportPlaybackStart({
+        playbackStartInfo: {
+          ItemId: event.track.id,
+          PositionTicks: 0,
+        },
+      });
+    }
+  }
 
-//   @OnEvent('internal.audio.track.announce')
-//   private async onPlaybackNewTrack(track: Track) {
-//     this.logger.debug(`Reporting playback start on track '${track.id}'`);
-//     await this.playstateApi.reportPlaybackStart({
-//       playbackStartInfo: {
-//         ItemId: track.id,
-//         PositionTicks: 0,
-//       },
-//     });
-//   }
+  @OnEvent('discord.audioplayer.event.play.stopped')
+  private async onPlaybackFinished(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    if (!jellyfin.initialized) return;
+    this.logger.debug(
+      `Reporting playback finish on track '${jellyfin.track.id}'`,
+    );
+    await jellyfin.playstateApi.reportPlaybackStopped({
+      playbackStopInfo: {
+        ItemId: jellyfin.track.id,
+        PositionTicks: jellyfin.progress * 10000,
+      },
+    });
+  }
 
-//   @OnEvent('internal.audio.track.finish')
-//   private async onPlaybackFinished(track: Track) {
-//     if (!track) {
-//       this.logger.error(
-//         'Unable to report playback because finished track was undefined',
-//       );
-//       return;
-//     }
-//     this.logger.debug(`Reporting playback finish on track '${track.id}'`);
-//     await this.playstateApi.reportPlaybackStopped({
-//       playbackStopInfo: {
-//         ItemId: track.id,
-//         PositionTicks: track.playbackProgress * 10000,
-//       },
-//     });
-//   }
+  @OnEvent('discord.audioplayer.event.paused')
+  private async onPlaybackPause(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    if (!jellyfin.initialized) return;
+    if (!jellyfin.track) {
+      this.logger.error(
+        'Unable to report changed playstate to Jellyfin because no track was active',
+      );
+      return;
+    }
 
-//   @OnEvent('playback.state.pause')
-//   private async onPlaybackPause(paused: boolean) {
-//     const track = this.playbackService.getPlaylistOrDefault().getActiveTrack();
+    await jellyfin.playstateApi.reportPlaybackProgress({
+      playbackProgressInfo: {
+        IsPaused: true,
+        ItemId: jellyfin.track.id,
+        PositionTicks: jellyfin.progress * 10000,
+      },
+    });
+  }
 
-//     if (!track) {
-//       this.logger.error(
-//         'Unable to report changed playstate to Jellyfin because no track was active',
-//       );
-//       return;
-//     }
+  @OnEvent('discord.audioplayer.event.resume')
+  private async onPlaybackResume(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    if (!jellyfin.initialized) return;
+    if (!jellyfin.track) {
+      this.logger.error(
+        'Unable to report changed playstate to Jellyfin because no track was active',
+      );
+      return;
+    }
 
-//     this.playstateApi.reportPlaybackProgress({
-//       playbackProgressInfo: {
-//         IsPaused: paused,
-//         ItemId: track.id,
-//         PositionTicks: track.playbackProgress * 10000,
-//       },
-//     });
-//   }
+    await jellyfin.playstateApi.reportPlaybackProgress({
+      playbackProgressInfo: {
+        IsPaused: false,
+        ItemId: jellyfin.track.id,
+        PositionTicks: jellyfin.progress * 10000,
+      },
+    });
+  }
 
-//   @Interval(1000)
-//   private async onPlaybackProgress() {
-//     const track = this.playbackService.getPlaylistOrDefault().getActiveTrack();
+  @OnEvent('discord.audioplayer.event.play.progress')
+  handleOnDiscordAudioProgress(event: DiscordProgressEvent) {
+    const jellyfin = this.getOrCreateJellyfinSession(event.guildId);
+    if (!jellyfin.initialized) return;
+    jellyfin.progress = event.progress;
 
-//     if (!track) {
-//       return;
-//     }
-
-//     await this.playstateApi.reportPlaybackProgress({
-//       playbackProgressInfo: {
-//         ItemId: track.id,
-//         PositionTicks: track.playbackProgress * 10000,
-//       },
-//     });
-
-//     this.logger.verbose(
-//       `Reported playback progress ${track.playbackProgress} to Jellyfin for item ${track.id}`,
-//     );
-//   }
-// }
+    jellyfin.playstateApi.reportPlaybackProgress({
+      playbackProgressInfo: {
+        ItemId: jellyfin.track.id,
+        PositionTicks: jellyfin.progress * 10000,
+      },
+    });
+    this.logger.verbose(
+      `Reported playback progress ${jellyfin.progress} to Jellyfin for item ${jellyfin.track.id}`,
+    );
+  }
+}

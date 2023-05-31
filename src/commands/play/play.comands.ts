@@ -7,8 +7,6 @@ import {
   On,
 } from '@discord-nestjs/core';
 
-import { RemoteImageInfo } from '@jellyfin/sdk/lib/generated-client/models';
-
 import { Injectable } from '@nestjs/common';
 import { Logger } from '@nestjs/common/services';
 
@@ -18,13 +16,11 @@ import {
   Guild,
   GuildMember,
   Interaction,
-  InteractionReplyOptions,
 } from 'discord.js';
 
 import { DiscordMessageService } from '../../clients/discord/discord.message.service';
 import { DiscordVoiceService } from '../../clients/discord/discord.voice.service';
 import { JellyfinSearchService } from '../../clients/jellyfin/jellyfin.search.service';
-import { SearchHint } from '../../models/search/SearchHint';
 import { PlaybackService } from '../../playback/playback.service';
 import { formatMillisecondsAsHumanReadable } from '../../utils/timeUtils';
 
@@ -102,7 +98,7 @@ export class PlayItemCommand {
         guild,
         guildMember,
       );
-      await this.playbackService.init(guild.id);
+      await this.playbackService.init(guild.id, guild.name);
     } catch (e) {
       if (e instanceof NotInVoiceException) {
         await interaction.editReply({
@@ -158,7 +154,10 @@ export class PlayItemCommand {
             tracks.length
           } tracks (${formatMillisecondsAsHumanReadable(
             reducedDuration,
-          )}) to your playlist (${totalLength}) tracks)`,
+          )}) to your playlist`,
+          description: `You have ${totalLength} tracks (${formatMillisecondsAsHumanReadable(
+            reducedDuration,
+          )}) in this playlist`,
           mixin(embedBuilder) {
             if (!image) {
               return embedBuilder;
@@ -169,50 +168,6 @@ export class PlayItemCommand {
       ],
       ephemeral: false,
     });
-
-    // let tracks = await item.toTracks(this.jellyfinSearchService);
-    // this.logger.debug(`Extracted ${tracks.length} tracks from the search item`);
-    // const reducedDuration = tracks.reduce(
-    //   (sum, item) => sum + item.duration,
-    //   0,
-    // );
-    // this.logger.debug(
-    //   `Adding ${tracks.length} tracks with a duration of ${reducedDuration} ticks`,
-    // );
-
-    // if (dto.mode == Mode.Shuffle) {
-    //   tracks = tracks
-    //     .map((value) => ({ value, sort: Math.random() }))
-    //     .sort((a, b) => a.sort - b.sort)
-    //     .map(({ value }) => value);
-    // }
-
-    // this.playbackService.getPlaylistOrDefault().enqueueTracks(tracks);
-
-    // const remoteImages = tracks.flatMap((track) => track.getRemoteImages());
-    // const remoteImage: RemoteImageInfo | undefined =
-    //   remoteImages.length > 0 ? remoteImages[0] : undefined;
-
-    // await interaction.followUp({
-    //   embeds: [
-    //     this.discordMessageService.buildMessage({
-    //       title: `Added ${
-    //         tracks.length
-    //       } tracks (${formatMillisecondsAsHumanReadable(
-    //         reducedDuration,
-    //       )}) to your playlist (${this.playbackService
-    //         .getPlaylistOrDefault()
-    //         .getLength()} tracks)`,
-    //       mixin(embedBuilder) {
-    //         if (!remoteImage?.Url) {
-    //           return embedBuilder;
-    //         }
-    //         return embedBuilder.setThumbnail(remoteImage.Url);
-    //       },
-    //     }),
-    //   ],
-    //   ephemeral: false,
-    // });
   }
 
   @On(Events.InteractionCreate)

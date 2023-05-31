@@ -1,17 +1,14 @@
 import {
   BaseItemDto,
   BaseItemKind,
-  RemoteImageResult,
   SearchHint as JellySearchHint,
 } from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getPlaylistsApi } from '@jellyfin/sdk/lib/utils/api/playlists-api';
-import { getRemoteImageApi } from '@jellyfin/sdk/lib/utils/api/remote-image-api';
 import { getSearchApi } from '@jellyfin/sdk/lib/utils/api/search-api';
 
 import { Injectable } from '@nestjs/common';
 import { Logger } from '@nestjs/common/services';
-import { Guild } from 'discord.js';
 import { GuildJellyfin } from 'src/models/jellyfin/GuildJellyfin';
 import { MediaKind } from 'src/models/search/MediaKind.enum';
 import { SearchHint } from 'src/models/search/SearchHint';
@@ -233,10 +230,13 @@ export class JellyfinSearchService {
         'Unable to construct search hint from base item, required properties were undefined',
       );
     }
+
     return [
       new JellyfinTrack(
         baseItemDto.Id,
         baseItemDto.Name,
+        baseItemDto.Album ? baseItemDto.Album : '',
+        baseItemDto.Artists ? baseItemDto.Artists.join(',') : '',
         baseItemDto.RunTimeTicks / 10000,
         this.buildImageURL(baseItemDto.Id),
       ),
@@ -281,6 +281,8 @@ export class JellyfinSearchService {
       return new JellyfinTrack(
         hint.Id ? hint.Id : '',
         hint.Name ? hint.Name : '',
+        hint.Album ? hint.Album : '',
+        hint.Artists ? hint.Artists.join(',') : '',
         (hint.RunTimeTicks ? hint.RunTimeTicks : 0) / 10000,
         this.buildImageURL(hint.Id ? hint.Id : ''),
       );
@@ -314,10 +316,47 @@ export class JellyfinSearchService {
       return new JellyfinTrack(
         hint.Id ? hint.Id : '',
         hint.Name ? hint.Name : '',
+        hint.Album ? hint.Album : '',
+        hint.Artists ? hint.Artists.join(',') : '',
         (hint.RunTimeTicks ? hint.RunTimeTicks : 0) / 10000,
         this.buildImageURL(hint.Id ? hint.Id : ''),
       );
     });
+  }
+
+  async getRandomTracks(limit: number): Promise<Track[]> {
+    const jellyfinClient = await this.getJellyfinService();
+    const api = jellyfinClient.api;
+    const searchApi = getItemsApi(api);
+
+    try {
+      const response = await searchApi.getItems({
+        includeItemTypes: [BaseItemKind.Audio],
+        limit: limit,
+        sortBy: ['random'],
+        userId: this.jellyfinService.getUserId(this.searchClientId),
+        recursive: true,
+      });
+
+      if (!response.data.Items) {
+        this.logger.error(
+          `Received empty list of items but expected a random list of tracks`,
+        );
+        return [];
+      }
+
+      const result: Track[] = [];
+      for (const item of response.data.Items) {
+        const track = await this.audio2Tracks(item);
+        result.push(track[0]);
+      }
+      return result;
+    } catch (err) {
+      this.logger.error(
+        `Unable to retrieve random items from Jellyfin: ${err}`,
+      );
+      return [];
+    }
   }
 
   /* async searchItem(

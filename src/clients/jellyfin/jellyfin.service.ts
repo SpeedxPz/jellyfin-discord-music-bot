@@ -1,15 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { Api, Jellyfin } from '@jellyfin/sdk';
-import { SystemApi } from '@jellyfin/sdk/lib/generated-client/api/system-api';
+import { Jellyfin } from '@jellyfin/sdk';
 import { getSystemApi } from '@jellyfin/sdk/lib/utils/api/system-api';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Constants } from '../../utils/constants';
-// import { JellyinPlaystateService } from './jellyfin.playstate.service';
 import { GuildJellyfin } from 'src/models/jellyfin/GuildJellyfin';
-import { Guild } from 'discord.js';
-import { GuildVoice } from 'src/models/discord/GuildVoice';
 import { getEnvironmentVariables } from 'src/utils/environment';
+import { JellyinPlaystateService } from './jellyfin.playstate.service';
 
 @Injectable()
 export class JellyfinService {
@@ -17,40 +14,41 @@ export class JellyfinService {
   private jellyfinSession: { [key: string]: GuildJellyfin };
 
   constructor(
-    private eventEmitter: EventEmitter2, // private readonly jellyfinPlayState: JellyinPlaystateService,
+    private eventEmitter: EventEmitter2,
+    private readonly jellyfinPlayState: JellyinPlaystateService,
   ) {
     this.jellyfinSession = {};
   }
 
-  getOrCreateJellyfinSession(guild_id: string): GuildJellyfin {
-    if (!(guild_id in this.jellyfinSession)) {
-      this.jellyfinSession[guild_id] = new GuildJellyfin();
-      this.jellyfinSession[guild_id].id = guild_id;
+  getOrCreateJellyfinSession(guildId: string): GuildJellyfin {
+    if (!(guildId in this.jellyfinSession)) {
+      this.jellyfinSession[guildId] = new GuildJellyfin();
+      this.jellyfinSession[guildId].id = guildId;
     }
-    return this.jellyfinSession[guild_id];
+    return this.jellyfinSession[guildId];
   }
 
-  async init(guild_id: string, client_name: string = 'Jellyfin Discord Bot') {
-    const jellyfin = this.getOrCreateJellyfinSession(guild_id);
+  async init(guildId: string, client_name: string = 'Jellyfin Discord Bot') {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
     jellyfin.jellyfin = new Jellyfin({
       clientInfo: {
         name: Constants.Metadata.ApplicationName,
         version: Constants.Metadata.Version.All(),
       },
       deviceInfo: {
-        id: `jellyfin-discord-bot-${guild_id}`,
+        id: `jellyfin-discord-bot-${guildId}`,
         name: client_name,
       },
     });
     jellyfin.api = jellyfin.jellyfin.createApi(
       getEnvironmentVariables().JELLYFIN_SERVER_ADDRESS,
     );
-    this.logger.debug(`[${guild_id}] Created Jellyfin Client and Api`);
-    await this.authenticate(guild_id);
+    this.logger.debug(`[${guildId}] Created Jellyfin Client and Api`);
+    await this.authenticate(guildId);
   }
 
-  async authenticate(guild_id: string) {
-    const jellyfin = this.getOrCreateJellyfinSession(guild_id);
+  async authenticate(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
     try {
       const response = await jellyfin.api.authenticateUserByName(
         getEnvironmentVariables().JELLYFIN_AUTHENTICATION_USERNAME ?? '',
@@ -58,33 +56,34 @@ export class JellyfinService {
       );
       if (response.data.SessionInfo?.UserId === undefined) {
         this.logger.error(
-          `[${guild_id}] Failed to authenticate with response code ${response.status}: '${response.data}'`,
+          `[${guildId}] Failed to authenticate with response code ${response.status}: '${response.data}'`,
         );
         return;
       }
       this.logger.debug(
-        `[${guild_id}] Connected using user '${response.data.SessionInfo.UserId}'`,
+        `[${guildId}] Connected using user '${response.data.SessionInfo.UserId}'`,
       );
       jellyfin.userId = response.data.SessionInfo.UserId;
       jellyfin.systemApi = getSystemApi(jellyfin.api);
       jellyfin.connected = true;
-      // await this.jellyfinPlayState.initializePlayState(jellyfin.api);
+      await this.jellyfinPlayState.initializePlayState(guildId, jellyfin.api);
     } catch (e) {
-      this.logger.error(test);
+      this.logger.error(e);
       jellyfin.connected = false;
     }
   }
 
-  disconnect(guild_id: string) {
-    const jellyfin = this.getOrCreateJellyfinSession(guild_id);
+  disconnect(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
     if (!jellyfin.api) {
       this.logger.warn(
-        `[${guild_id}] Jellyfin Api Client was unexpectedly undefined. Graceful destroy has failed`,
+        `[${guildId}] Jellyfin Api Client was unexpectedly undefined. Graceful destroy has failed`,
       );
       return;
     }
     jellyfin.api.logout();
     jellyfin.connected = false;
+    this.jellyfinPlayState.destroy(guildId);
   }
 
   disconnectGracefully() {
@@ -97,23 +96,23 @@ export class JellyfinService {
     }
   }
 
-  getApi(guild_id: string) {
-    return this.getOrCreateJellyfinSession(guild_id).api;
+  getApi(guildId: string) {
+    return this.getOrCreateJellyfinSession(guildId).api;
   }
 
-  getJellyfin(guild_id: string) {
-    return this.getOrCreateJellyfinSession(guild_id).jellyfin;
+  getJellyfin(guildId: string) {
+    return this.getOrCreateJellyfinSession(guildId).jellyfin;
   }
 
-  getSystemApi(guild_id: string) {
-    return this.getOrCreateJellyfinSession(guild_id).systemApi;
+  getSystemApi(guildId: string) {
+    return this.getOrCreateJellyfinSession(guildId).systemApi;
   }
 
-  getUserId(guild_id: string) {
-    return this.getOrCreateJellyfinSession(guild_id).userId;
+  getUserId(guildId: string) {
+    return this.getOrCreateJellyfinSession(guildId).userId;
   }
 
-  isConnected(guild_id: string) {
-    return this.getOrCreateJellyfinSession(guild_id).connected;
+  isConnected(guildId: string) {
+    return this.getOrCreateJellyfinSession(guildId).connected;
   }
 }

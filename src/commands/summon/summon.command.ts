@@ -5,7 +5,6 @@ import { DiscordMessageService } from '../../clients/discord/discord.message.ser
 import { defaultMemberPermissions } from 'src/utils/environment';
 import { DiscordVoiceService } from 'src/clients/discord/discord.voice.service';
 import { NotInVoiceException } from 'src/clients/discord/exception/not-in-voice.exception';
-import { JellyfinService } from 'src/clients/jellyfin/jellyfin.service';
 import { PlaybackService } from 'src/playback/playback.service';
 
 @Injectable()
@@ -35,7 +34,7 @@ export class SummonCommand {
         guild,
         guildMember,
       );
-      await this.playbackService.init(guild.id);
+      await this.playbackService.init(guild.id, guild.name);
     } catch (e) {
       if (e instanceof NotInVoiceException) {
         await interaction.editReply({

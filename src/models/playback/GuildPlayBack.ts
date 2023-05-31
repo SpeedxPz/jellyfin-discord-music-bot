@@ -1,5 +1,3 @@
-import { Api, Jellyfin } from '@jellyfin/sdk';
-import { SystemApi } from '@jellyfin/sdk/lib/generated-client/api/system-api';
 import { PlayQueue } from '../shared/PlayQueue';
 
 export class GuildPlayBack {
@@ -7,12 +5,14 @@ export class GuildPlayBack {
   queue: PlayQueue;
   playing: boolean;
   pause: boolean;
+  progress: number;
 
   constructor(id: string = '') {
     this.id = id;
     this.queue = new PlayQueue();
     this.playing = false;
     this.pause = false;
+    this.progress = 0;
   }
 
   destroy(): void {}

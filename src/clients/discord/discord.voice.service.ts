@@ -13,12 +13,13 @@ import {
 import { Injectable, Logger } from '@nestjs/common';
 import { DiscordMessageService } from './discord.message.service';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { GenericTryHandler } from 'src/models/generic-try-handler';
 import { Guild, GuildMember } from 'discord.js';
 import { GuildVoice } from 'src/models/discord/GuildVoice';
 import { NotInVoiceException } from './exception/not-in-voice.exception';
-import { Track } from 'src/models/shared/Track';
 import { DiscordPlayEvent } from 'src/models/discord/DiscordPlayEvent';
+import { Interval } from '@nestjs/schedule';
+import { DiscordProgressEvent } from 'src/models/discord/DiscordProgressEvent';
+import { Track } from 'src/models/shared/Track';
 
 @Injectable()
 export class DiscordVoiceService {
@@ -40,21 +41,57 @@ export class DiscordVoiceService {
     return this.voiceSession[guild_id];
   }
 
+  /**
+   * Play the current audio player
+   */
   @OnEvent('discord.audioplayer.play')
   handleOnNewTrack(event: DiscordPlayEvent) {
-    console.log(event.streamURL);
-    const resource = createAudioResource(
-      'https://media.takumipro.dev/Audio/994803732ebb83ef5c153cdad4f72fea/universal?UserId=35f4dfd3e6f84d89b85982aec6fd02e0&DeviceId=Discord+Jellyfin+Music+Bot&MaxStreamingBitrate=96000&Container=ogg%2Copus&AudioCodec=opus&TranscodingContainer=ts&TranscodingProtocol=hls&api_key=2bec8935f87a483f90ab2bbfad3e317b',
-      {
-        inlineVolume: true,
-      },
-    );
-    //event.streamURL
-    console.log(resource.playbackDuration);
-    this.playResource(event.guild_id, resource);
+    const voice = this.getOrCreateVoiceSession(event.guild_id);
+    if (!voice.voiceConnection) return;
+    const resource = createAudioResource(event.streamURL, {
+      inlineVolume: true,
+    });
+    this.playResource(event.guild_id, resource, event.track);
   }
 
-  playResource(guild_id: string, resource: AudioResource<unknown>) {
+  /**
+   * Stop the current audio player
+   */
+  @OnEvent('discord.audioplayer.stop')
+  stop(guild_id: string) {
+    const voice = this.getOrCreateVoiceSession(guild_id);
+    if (!voice.voiceConnection) return;
+    voice.audioPlayer?.stop();
+    voice.audioResource = undefined;
+  }
+
+  /**
+   * Pauses the current audio player
+   */
+  @OnEvent('discord.audioplayer.pause')
+  pause(guild_id: string) {
+    const voice = this.getOrCreateVoiceSession(guild_id);
+    if (!voice.voiceConnection) return;
+    voice.audioPlayer?.pause();
+    this.eventEmitter.emit('discord.audioplayer.event.paused', guild_id);
+  }
+
+  /**
+   * Unpauses the current audio player
+   */
+  @OnEvent('discord.audioplayer.unpause')
+  unpause(guild_id) {
+    const voice = this.getOrCreateVoiceSession(guild_id);
+    if (!voice.voiceConnection) return;
+    voice.audioPlayer?.unpause();
+    this.eventEmitter.emit('discord.audioplayer.event.resume', guild_id);
+  }
+
+  playResource(
+    guild_id: string,
+    resource: AudioResource<unknown>,
+    track: Track,
+  ) {
     const voice = this.getOrCreateVoiceSession(guild_id);
     this.logger.debug(
       `Playing audio resource with volume ${
@@ -64,6 +101,10 @@ export class DiscordVoiceService {
     if (voice.audioPlayer) {
       voice.audioPlayer.play(resource);
       voice.audioResource = resource;
+      this.eventEmitter.emit(
+        'discord.audioplayer.event.play.started',
+        new DiscordPlayEvent(guild_id, track, ''),
+      );
     }
   }
 
@@ -138,6 +179,11 @@ export class DiscordVoiceService {
     });
   }
 
+  isHaveVoiceConnection(guild_id: string): boolean {
+    const voice = this.getOrCreateVoiceSession(guild_id);
+    return voice.voiceConnection !== undefined;
+  }
+
   private attachEventListenersToAudioPlayer(voice: GuildVoice) {
     if (!voice.voiceConnection) {
       this.logger.error(
@@ -190,61 +236,31 @@ export class DiscordVoiceService {
       }
 
       this.logger.debug(
-        `[${voice.id}] Audio player finished playing old resource`,
+        `[${voice.id}] Audio player finished playing old resource with ${voice.audioResource?.playbackDuration}`,
       );
 
-      // const playlist = this.playbackService.getPlaylistOrDefault();
-      // const finishedTrack = playlist.getActiveTrack();
-
-      // if (finishedTrack) {
-      //   finishedTrack.playing = false;
-      //   this.eventEmitter.emit('internal.audio.track.finish', finishedTrack);
-      // }
-
-      // const hasNextTrack = playlist.hasNextTrackInPlaylist();
-
-      // this.logger.debug(
-      //   `Playlist has next track: ${hasNextTrack ? 'yes' : 'no'}`,
-      // );
-
-      // if (!hasNextTrack) {
-      //   this.logger.debug('Reached the end of the playlist');
-      //   return;
-      // }
-
-      // this.playbackService.getPlaylistOrDefault().setNextTrackAsActiveTrack();
+      this.eventEmitter.emit(
+        'discord.audioplayer.event.play.stopped',
+        voice.id,
+      );
     });
   }
 
-  /* tryJoinChannelAndEstablishVoiceConnection(member: GuildMember): GenericTryHandler {
-    if (this.voiceConnection !== undefined) {
-      this.logger.debug(
-        'Avoided joining the voice channel because voice connection is already defined',
+  @Interval(500)
+  private checkAudioResourcePlayback() {
+    for (const [key, value] of Object.entries(this.voiceSession)) {
+      const voice = this.voiceSession[key];
+      if (!voice.audioResource) {
+        continue;
+      }
+      const progress = voice.audioResource.playbackDuration;
+
+      this.eventEmitter.emit(
+        'discord.audioplayer.event.play.progress',
+        new DiscordProgressEvent(voice.id, progress),
       );
-      return {
-        success: true,
-        reply: {},
-      };
+
+      this.logger.verbose(`Reporting progress: ${progress} for ${voice.id}`);
     }
-
-    if (member.voice.channel === null) {
-      this.logger.log(
-        `Unable to join a voice channel because the member ${member.user.username} is not in a voice channel`,
-      );
-      return {
-        success: false,
-        reply: {
-          embeds: [
-            this.discordMessageService.buildMessage({
-              title: 'Unable to join your channel',
-              description:
-                "I am unable to join your channel, because you don't seem to be in a voice channel. Connect to a channel first to use this command",
-            }),
-          ],
-        },
-      };
-    }
-
-
-  } */
+  }
 }

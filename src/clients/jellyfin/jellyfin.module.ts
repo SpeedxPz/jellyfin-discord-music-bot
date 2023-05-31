@@ -1,26 +1,18 @@
 import { Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { JellyinPlaystateService } from './jellyfin.playstate.service';
 import { JellyfinSearchService } from './jellyfin.search.service';
 import { JellyfinService } from './jellyfin.service';
 import { JellyfinStreamBuilderService } from './jellyfin.stream.builder.service';
-// import { JellyfinSearchService } from './jellyfin.search.service';
-// import { JellyfinService } from './jellyfin.service';
-// import { JellyfinStreamBuilderService } from './jellyfin.stream.builder.service';
-// import { JellyinPlaystateService } from './jellyfin.playstate.service';
-// import { JellyfinWebSocketService } from './jellyfin.websocket.service';
-// import { PlaybackModule } from './../../playback/playback.module';
 
 @Module({
-  imports: [
-    // PlaybackModule
-  ],
+  imports: [],
   controllers: [],
   providers: [
     JellyfinService,
     JellyfinSearchService,
     JellyfinStreamBuilderService,
-    // JellyinPlaystateService,
+    JellyinPlaystateService,
     // JellyfinWebSocketService,
-    // JellyfinSearchService,
   ],
   exports: [
     JellyfinService,
