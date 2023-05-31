@@ -1,42 +1,11 @@
-import { MediaKind } from './MediaKind.enum';
-
-
-
-export class SearchHint {
-  constructor(
-    protected readonly id: string,
-    protected readonly name: string,
-    protected readonly type: MediaKind,
-    protected runtimeInMilliseconds: number,
-  ) {}
-
-  toString() {
-    switch (this.type) {
-      case MediaKind.AudioAlbum:
-        return `🎶 ${this.name}`;
-      case MediaKind.Playlist:
-        return `🎧 ${this.name}`;
-      default:
-        return `🎵 ${this.name}`;
-    }
-  }
-
-  getId(): string {
-    return this.id;
-  }
-}
-
-
 // import {
 //   BaseItemDto,
-//   SearchHint as JellyfinSearchHint,
+//   SearchHint as JellySearchHint,
 // } from '@jellyfin/sdk/lib/generated-client/models';
 // import { z } from 'zod';
 
-// import { JellyfinSearchService } from '../../clients/jellyfin/jellyfin.search.service';
-// import { Track } from '../shared/Track';
 
-// export class SearchHint {
+// export class JellyfinSearchHint {
 //   constructor(
 //     protected readonly id: string,
 //     protected readonly name: string,
@@ -47,15 +16,15 @@ export class SearchHint {
 //     return `🎵 ${this.name}`;
 //   }
 
-//   async toTracks(searchService: JellyfinSearchService): Promise<Track[]> {
-//     return [new Track(this.id, this.name, this.runtimeInMilliseconds, {})];
-//   }
+//   // async toTracks(searchService: JellyfinSearchService): Promise<Track[]> {
+//   //   return [new Track(this.id, this.name, this.runtimeInMilliseconds, {})];
+//   // }
 
 //   getId(): string {
 //     return this.id;
 //   }
 
-//   static constructFromHint(hint: JellyfinSearchHint) {
+//   static constructFromHint(hint: JellySearchHint) {
 //     const schema = z.object({
 //       Id: z.string(),
 //       Name: z.string(),
@@ -77,7 +46,7 @@ export class SearchHint {
 //     if (result.data.AlbumArtist != '') {
 //       itemName = `${result.data.Name} (${result.data.AlbumArtist})`;
 //     }
-//     return new SearchHint(
+//     return new JellyfinSearchHint(
 //       result.data.Id,
 //       itemName,
 //       result.data.RunTimeTicks / 10000,
@@ -90,7 +59,7 @@ export class SearchHint {
 //         'Unable to construct search hint from base item, required properties were undefined',
 //       );
 //     }
-//     return new SearchHint(
+//     return new JellyfinSearchHint(
 //       baseItem.Id,
 //       baseItem.Name,
 //       baseItem.RunTimeTicks / 10000,

@@ -8,12 +8,16 @@ env.config();
 export const environmentVariablesSchema = z.object({
   DISCORD_CLIENT_TOKEN: z.string(),
   JELLYFIN_SERVER_ADDRESS: z.string().url(),
+  JELLYFIN_PUBLIC_IMAGE_SUPPORT: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   JELLYFIN_AUTHENTICATION_USERNAME: z.string(),
   JELLYFIN_AUTHENTICATION_PASSWORD: z.string(),
   UPDATER_DISABLE_NOTIFICATIONS: z
     .enum(['true', 'false'])
     .default('false')
-    .transform((value) => Boolean(value)),
+    .transform((value) => value === 'true'),
   LOG_LEVEL: z
     .enum(['ERROR', 'WARN', 'LOG', 'DEBUG', 'VERBOSE'])
     .default('LOG'),
@@ -36,4 +40,8 @@ export const getEnvironmentVariables = () => {
 };
 
 export const defaultMemberPermissions: PermissionResolvable | undefined =
-  getEnvironmentVariables().ALLOW_EVERYONE_FOR_DEFAULT_PERMS ? 'ViewChannel' : undefined;
+  getEnvironmentVariables().ALLOW_EVERYONE_FOR_DEFAULT_PERMS
+    ? 'ViewChannel'
+    : undefined;
+
+

@@ -8,21 +8,25 @@ export class JellyfinStreamBuilderService {
 
   constructor(private readonly jellyfinService: JellyfinService) {}
 
-  buildStreamUrl(jellyfinItemId: string, bitrate: number) {
-    const api = this.jellyfinService.getApi();
+  buildStreamUrl(
+    guild_id: string,
+    jellyfinItemId: string,
+    bitrate: number,
+  ): string {
+    const api = this.jellyfinService.getApi(guild_id);
 
     this.logger.debug(
       `Building stream for '${jellyfinItemId}' with bitrate ${bitrate}`,
     );
 
-    const accessToken = this.jellyfinService.getApi().accessToken;
+    const accessToken = this.jellyfinService.getApi(guild_id).accessToken;
 
     const uri = new URL(api.basePath);
     uri.pathname = `/Audio/${jellyfinItemId}/universal`;
-    uri.searchParams.set('UserId', this.jellyfinService.getUserId());
+    uri.searchParams.set('UserId', this.jellyfinService.getUserId(guild_id));
     uri.searchParams.set(
       'DeviceId',
-      this.jellyfinService.getJellyfin().clientInfo.name,
+      this.jellyfinService.getJellyfin(guild_id).clientInfo.name,
     );
     uri.searchParams.set('MaxStreamingBitrate', `${bitrate}`);
     uri.searchParams.set('Container', 'ogg,opus');

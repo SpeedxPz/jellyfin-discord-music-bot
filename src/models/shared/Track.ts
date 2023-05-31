@@ -1,9 +1,9 @@
-import {
-  RemoteImageInfo,
-  RemoteImageResult,
-} from '@jellyfin/sdk/lib/generated-client/models';
+// import {
+//   RemoteImageInfo,
+//   RemoteImageResult,
+// } from '@jellyfin/sdk/lib/generated-client/models';
 
-import { JellyfinStreamBuilderService } from '../../clients/jellyfin/jellyfin.stream.builder.service';
+// import { JellyfinStreamBuilderService } from '../../clients/jellyfin/jellyfin.stream.builder.service';
 
 export class Track {
   /**
@@ -22,46 +22,49 @@ export class Track {
    */
   readonly duration: number;
 
-  /**
-   * A result object that contains a collection of images that are available outside the current network.
-   */
-  remoteImages?: RemoteImageResult;
+
+  readonly imageURL: string;
 
   playing: boolean;
 
-  playbackProgress: number;
+  /**
+   * A result object that contains a collection of images that are available outside the current network.
+   */
 
   constructor(
     id: string,
     name: string,
     duration: number,
-    remoteImages?: RemoteImageResult,
+    imageURL: string,
   ) {
     this.id = id;
     this.name = name;
     this.duration = duration;
-    this.remoteImages = remoteImages;
+    this.imageURL = imageURL;
     this.playing = false;
-    this.playbackProgress = 0;
   }
 
   getDuration() {
     return this.duration;
   }
 
-  getStreamUrl(streamBuilder: JellyfinStreamBuilderService) {
-    return streamBuilder.buildStreamUrl(this.id, 96000);
+  getImageURL() {
+    return this.imageURL;
   }
 
-  getRemoteImages(): RemoteImageInfo[] {
-    return this.remoteImages?.Images ?? [];
-  }
+  // getStreamUrl(streamBuilder: JellyfinStreamBuilderService) {
+  //   return streamBuilder.buildStreamUrl(this.id, 96000);
+  // }
 
-  getPlaybackProgress() {
-    return this.playbackProgress;
-  }
+  // getRemoteImages(): RemoteImageInfo[] {
+  //   return this.remoteImages?.Images ?? [];
+  // }
 
-  updatePlaybackProgress(progress: number) {
-    this.playbackProgress = progress;
-  }
+  // getPlaybackProgress() {
+  //   return this.playbackProgress;
+  // }
+
+  // updatePlaybackProgress(progress: number) {
+  //   this.playbackProgress = progress;
+  // }
 }

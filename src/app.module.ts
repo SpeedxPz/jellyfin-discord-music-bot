@@ -9,10 +9,10 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { DiscordConfigService } from './clients/discord/discord.config.service';
 import { DiscordClientModule } from './clients/discord/discord.module';
-import { JellyfinClientModule } from './clients/jellyfin/jellyfin.module';
+// import { JellyfinClientModule } from './clients/jellyfin/jellyfin.module';
 import { CommandModule } from './commands/command.module';
 import { HealthModule } from './health/health.module';
-import { PlaybackModule } from './playback/playback.module';
+// import { PlaybackModule } from './playback/playback.module';
 import { UpdatesModule } from './updates/updates.module';
 import {
   environmentVariablesSchema,
@@ -43,8 +43,8 @@ import { fromZodError } from 'zod-validation-error';
     EventEmitterModule.forRoot(),
     CommandModule,
     DiscordClientModule,
-    JellyfinClientModule,
-    PlaybackModule,
+    //JellyfinClientModule,
+    // PlaybackModule,
     UpdatesModule,
     HealthModule,
   ],

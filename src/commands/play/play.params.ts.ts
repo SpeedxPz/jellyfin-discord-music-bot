@@ -1,6 +1,7 @@
 import { Choice, Param, ParamType } from '@discord-nestjs/core';
 
 import { BaseItemKind } from '@jellyfin/sdk/lib/generated-client/models';
+import { MediaKind } from 'src/models/search/MediaKind.enum';
 
 export enum SearchType {
   Audio = 0,
@@ -43,6 +44,19 @@ export class PlayCommandParams {
           BaseItemKind.Playlist,
           BaseItemKind.MusicAlbum,
         ];
+    }
+  }
+
+  static getMediaKinds(type: SearchType | undefined): MediaKind[] {
+    switch (type) {
+      case SearchType.Audio:
+        return [MediaKind.Audio];
+      case SearchType.Playlist:
+        return [MediaKind.Playlist];
+      case SearchType.AudioAlbum:
+        return [MediaKind.AudioAlbum];
+      default:
+        return [MediaKind.Audio, MediaKind.Playlist, MediaKind.AudioAlbum];
     }
   }
 }

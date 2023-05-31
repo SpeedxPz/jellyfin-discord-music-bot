@@ -1,6 +1,6 @@
-import { CommandInteraction } from 'discord.js';
+// import { CommandInteraction } from 'discord.js';
 
-export type PlaylistTempCommandData = {
-  page: number;
-  interaction: CommandInteraction;
-};
+// export type PlaylistTempCommandData = {
+//   page: number;
+//   interaction: CommandInteraction;
+// };

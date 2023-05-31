@@ -15,6 +15,7 @@ import { Logger } from '@nestjs/common/services';
 import {
   CommandInteraction,
   Events,
+  Guild,
   GuildMember,
   Interaction,
   InteractionReplyOptions,
@@ -29,6 +30,8 @@ import { formatMillisecondsAsHumanReadable } from '../../utils/timeUtils';
 
 import { defaultMemberPermissions } from 'src/utils/environment';
 import { PlayCommandParams, SearchType, Mode } from './play.params.ts';
+import { Track } from 'src/models/shared/Track';
+import { NotInVoiceException } from 'src/clients/discord/exception/not-in-voice.exception';
 
 @Injectable()
 @Command({
@@ -53,21 +56,32 @@ export class PlayItemCommand {
   ) {
     await interaction.deferReply({ ephemeral: false });
 
-    const baseItems = PlayCommandParams.getBaseItemKinds(dto.type);
+    const guild = interaction.guild as Guild;
 
-    let item: SearchHint | undefined;
+    const mediaKind = PlayCommandParams.getMediaKinds(dto.type);
+
+    let tracks: Track[];
     if (dto.name.startsWith('native-')) {
-      item = await this.jellyfinSearchService.getById(
+      tracks = await this.jellyfinSearchService.getTracksById(
         dto.name.replace('native-', ''),
-        baseItems,
+        mediaKind,
       );
     } else {
-      item = (
-        await this.jellyfinSearchService.searchItem(dto.name, 1, baseItems)
+      const hint = (
+        await this.jellyfinSearchService.searchItem(dto.name, 1, mediaKind)
       ).find((x) => x);
+
+      if (!hint) {
+        tracks = [];
+      } else {
+        tracks = await this.jellyfinSearchService.getTracksById(
+          hint.getId(),
+          mediaKind,
+        );
+      }
     }
 
-    if (!item) {
+    if (tracks.length <= 0) {
       await interaction.followUp({
         embeds: [
           this.discordMessageService.buildMessage({
@@ -83,28 +97,49 @@ export class PlayItemCommand {
 
     const guildMember = interaction.member as GuildMember;
 
-    const tryResult =
+    try {
       this.discordVoiceService.tryJoinChannelAndEstablishVoiceConnection(
+        guild,
         guildMember,
       );
-
-    if (!tryResult.success) {
-      const replyOptions = tryResult.reply as InteractionReplyOptions;
-      await interaction.editReply({
-        embeds: replyOptions.embeds,
-      });
+      await this.playbackService.init(guild.id);
+    } catch (e) {
+      if (e instanceof NotInVoiceException) {
+        await interaction.editReply({
+          embeds: [
+            this.discordMessageService.buildMessage({
+              title: 'Unable to join your channel',
+              description:
+                "I am unable to join your channel, because you don't seem to be in a voice channel. Connect to a channel first to use this command",
+            }),
+          ],
+        });
+      } else {
+        await interaction.editReply({
+          embeds: [
+            this.discordMessageService.buildMessage({
+              title: 'Unable to join your channel',
+              description:
+                'I am unable to join your channel, Unknown error. This should not happen!',
+            }),
+          ],
+        });
+      }
       return;
     }
 
-    let tracks = await item.toTracks(this.jellyfinSearchService);
     this.logger.debug(`Extracted ${tracks.length} tracks from the search item`);
     const reducedDuration = tracks.reduce(
       (sum, item) => sum + item.duration,
       0,
     );
+
     this.logger.debug(
       `Adding ${tracks.length} tracks with a duration of ${reducedDuration} ticks`,
     );
+
+    const images = tracks.flatMap((track) => track.getImageURL());
+    const image: string = images.length > 0 ? images[0] : '';
 
     if (dto.mode == Mode.Shuffle) {
       tracks = tracks
@@ -113,11 +148,8 @@ export class PlayItemCommand {
         .map(({ value }) => value);
     }
 
-    this.playbackService.getPlaylistOrDefault().enqueueTracks(tracks);
-
-    const remoteImages = tracks.flatMap((track) => track.getRemoteImages());
-    const remoteImage: RemoteImageInfo | undefined =
-      remoteImages.length > 0 ? remoteImages[0] : undefined;
+    this.playbackService.enqueue(guild.id, tracks);
+    const totalLength = this.playbackService.getQueueLength(guild.id);
 
     await interaction.followUp({
       embeds: [
@@ -126,19 +158,61 @@ export class PlayItemCommand {
             tracks.length
           } tracks (${formatMillisecondsAsHumanReadable(
             reducedDuration,
-          )}) to your playlist (${this.playbackService
-            .getPlaylistOrDefault()
-            .getLength()} tracks)`,
+          )}) to your playlist (${totalLength}) tracks)`,
           mixin(embedBuilder) {
-            if (!remoteImage?.Url) {
+            if (!image) {
               return embedBuilder;
             }
-            return embedBuilder.setThumbnail(remoteImage.Url);
+            return embedBuilder.setThumbnail(image);
           },
         }),
       ],
       ephemeral: false,
     });
+
+    // let tracks = await item.toTracks(this.jellyfinSearchService);
+    // this.logger.debug(`Extracted ${tracks.length} tracks from the search item`);
+    // const reducedDuration = tracks.reduce(
+    //   (sum, item) => sum + item.duration,
+    //   0,
+    // );
+    // this.logger.debug(
+    //   `Adding ${tracks.length} tracks with a duration of ${reducedDuration} ticks`,
+    // );
+
+    // if (dto.mode == Mode.Shuffle) {
+    //   tracks = tracks
+    //     .map((value) => ({ value, sort: Math.random() }))
+    //     .sort((a, b) => a.sort - b.sort)
+    //     .map(({ value }) => value);
+    // }
+
+    // this.playbackService.getPlaylistOrDefault().enqueueTracks(tracks);
+
+    // const remoteImages = tracks.flatMap((track) => track.getRemoteImages());
+    // const remoteImage: RemoteImageInfo | undefined =
+    //   remoteImages.length > 0 ? remoteImages[0] : undefined;
+
+    // await interaction.followUp({
+    //   embeds: [
+    //     this.discordMessageService.buildMessage({
+    //       title: `Added ${
+    //         tracks.length
+    //       } tracks (${formatMillisecondsAsHumanReadable(
+    //         reducedDuration,
+    //       )}) to your playlist (${this.playbackService
+    //         .getPlaylistOrDefault()
+    //         .getLength()} tracks)`,
+    //       mixin(embedBuilder) {
+    //         if (!remoteImage?.Url) {
+    //           return embedBuilder;
+    //         }
+    //         return embedBuilder.setThumbnail(remoteImage.Url);
+    //       },
+    //     }),
+    //   ],
+    //   ephemeral: false,
+    // });
   }
 
   @On(Events.InteractionCreate)
@@ -146,6 +220,8 @@ export class PlayItemCommand {
     if (!interaction.isAutocomplete()) {
       return;
     }
+
+    const guild = interaction.guild as Guild;
 
     const focusedAutoCompleteAction = interaction.options.getFocused(true);
     const typeIndex = interaction.options.getInteger('type');
@@ -168,7 +244,7 @@ export class PlayItemCommand {
     const hints = await this.jellyfinSearchService.searchItem(
       searchQuery,
       20,
-      PlayCommandParams.getBaseItemKinds(type as SearchType),
+      PlayCommandParams.getMediaKinds(type as SearchType),
     );
 
     if (hints.length === 0) {
