@@ -154,10 +154,10 @@ export class PlayItemCommand {
             tracks.length
           } tracks (${formatMillisecondsAsHumanReadable(
             reducedDuration,
-          )}) to your playlist`,
+          )}) to your queue`,
           description: `You have ${totalLength} tracks (${formatMillisecondsAsHumanReadable(
             reducedDuration,
-          )}) in this playlist`,
+          )}) in this queue`,
           mixin(embedBuilder) {
             if (!image) {
               return embedBuilder;

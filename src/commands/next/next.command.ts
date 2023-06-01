@@ -8,7 +8,7 @@ import { defaultMemberPermissions } from 'src/utils/environment';
 
 @Command({
   name: 'next',
-  description: 'Go to the next track in the playlist',
+  description: 'Go to the next track in the queue',
   defaultMemberPermissions: defaultMemberPermissions,
 })
 @Injectable()

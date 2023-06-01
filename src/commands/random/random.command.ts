@@ -12,7 +12,7 @@ import { NotInVoiceException } from 'src/clients/discord/exception/not-in-voice.
 
 @Command({
   name: 'random',
-  description: 'Enqueues a random selection of tracks to your playlist',
+  description: 'Enqueues a random selection of tracks to your queue',
   defaultMemberPermissions: defaultMemberPermissions,
 })
 @Injectable()
@@ -72,8 +72,8 @@ export class EnqueueRandomItemsCommand {
     await interaction.editReply({
       embeds: [
         this.discordMessageService.buildMessage({
-          title: `Added ${tracks.length} tracks to your playlist`,
-          description: 'Use ``/playlist`` to see them',
+          title: `Added ${tracks.length} tracks to your queue`,
+          description: 'Use ``/queue`` to see them',
         }),
       ],
     });

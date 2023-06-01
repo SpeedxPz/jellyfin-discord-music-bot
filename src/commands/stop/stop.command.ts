@@ -9,7 +9,7 @@ import { defaultMemberPermissions } from 'src/utils/environment';
 
 @Command({
   name: 'stop',
-  description: 'Stop playback entirely and clear the current playlist',
+  description: 'Stop playback entirely and clear the current queue',
   defaultMemberPermissions: defaultMemberPermissions,
 })
 @Injectable()
@@ -30,7 +30,7 @@ export class StopPlaybackCommand {
       ? 'Playback stopped successfully'
       : 'Playback failed to stop';
     const description = hasVoiceConnection
-      ? 'In addition, your playlist has been cleared'
+      ? 'In addition, your queue has been cleared'
       : 'There is no active track in the queue';
     if (hasVoiceConnection) {
       this.playbackService.stop(guild.id);
