@@ -114,11 +114,15 @@ export class PlayingCommand {
       .setColor(DefaultJellyfinColor);
 
     if (track.imageURL) {
-      embed.setThumbnail(track.imageURL);
+      return {
+        embeds: [embed.setThumbnail(track.imageURL)],
+        ephemeral: false,
+      };
+    } else {
+      return {
+        embeds: [embed],
+        ephemeral: false,
+      };
     }
-    return {
-      embeds: [embed],
-      ephemeral: false,
-    };
   }
 }
