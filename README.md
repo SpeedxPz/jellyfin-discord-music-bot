@@ -35,8 +35,13 @@ By the way, The many things is missing from that repo. So i made a fork and try 
 
 ## 🚀 Installation
 
-Docker Image
+Docker Image     
+     
+Latest release
 ```registry.takumipro.dev/public/jellyfin-discord-music-bot:latest```
+
+Development image
+```registry.takumipro.dev/public/jellyfin-discord-music-bot:dev```
 
 Please check out the Wiki section in the repository for installation instructions:
 
