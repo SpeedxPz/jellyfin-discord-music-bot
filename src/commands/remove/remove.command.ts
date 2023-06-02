@@ -32,7 +32,7 @@ export class RemoveTrackCommand {
         embeds: [
           this.discordMessageService.buildErrorMessage({
             title:
-              'Invalid track number or try to remove current playing track.',
+              'You can only remove track in the queue and also not the current playing track.',
           }),
         ],
       });

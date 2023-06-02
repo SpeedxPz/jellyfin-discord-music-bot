@@ -9,7 +9,7 @@ import { GoTrackCommandParams } from './go.params';
 
 @Command({
   name: 'go',
-  description: 'Go to the specific tracks',
+  description: 'Go to the specific tracks, Use track number from queue command',
   defaultMemberPermissions: defaultMemberPermissions,
 })
 @Injectable()

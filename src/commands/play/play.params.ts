@@ -32,12 +32,15 @@ export class PlayCommandParams {
   type: SearchType | undefined;
 
   @Choice(Mode)
-  @Param({ description: 'Add mode', type: ParamType.INTEGER })
+  @Param({
+    description: 'How the track should be add',
+    type: ParamType.INTEGER,
+  })
   mode: Mode | undefined;
 
   @Choice(Position)
   @Param({
-    description: 'Position to add track to queue',
+    description: 'Position in the queue where the track should be add',
     type: ParamType.INTEGER,
   })
   position: Position | undefined;

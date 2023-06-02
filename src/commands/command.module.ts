@@ -16,6 +16,8 @@ import { StatusCommand } from './status/status.command';
 import { StopPlaybackCommand } from './stop/stop.command';
 import { SummonCommand } from './summon/summon.command';
 import { RemoveTrackCommand } from './remove/remove.command';
+import { HelpCommand } from './help/help.command';
+import { PlayingCommand } from './playing/playing.command';
 
 @Module({
   imports: [
@@ -40,8 +42,8 @@ import { RemoveTrackCommand } from './remove/remove.command';
     EnqueueRandomItemsCommand,
     StatusCommand,
     RemoveTrackCommand,
-    // HelpCommand,
-    // VolumeCommand,
+    HelpCommand,
+    PlayingCommand,
   ],
   exports: [],
 })

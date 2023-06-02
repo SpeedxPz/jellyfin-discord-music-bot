@@ -24,7 +24,7 @@ export class DiscordMessageService {
             iconURL: Constants.Design.Icons.ErrorIcon,
           })
           .setFooter({
-            text: `Report this issue: ${Constants.Links.ReportIssue}`,
+            text: `If this was a mistake, Report this issue: ${Constants.Links.ReportIssue}`,
           })
           .setColor(ErrorJellyfinColor);
       },

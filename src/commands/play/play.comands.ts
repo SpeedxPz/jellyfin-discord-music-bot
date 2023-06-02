@@ -28,6 +28,7 @@ import { defaultMemberPermissions } from 'src/utils/environment';
 import { PlayCommandParams, SearchType, Mode, Position } from './play.params';
 import { Track } from 'src/models/shared/Track';
 import { NotInVoiceException } from 'src/clients/discord/exception/not-in-voice.exception';
+import { trimStringToFixedLength } from 'src/utils/stringUtils/stringUtils';
 
 @Injectable()
 @Command({
@@ -181,8 +182,6 @@ export class PlayItemCommand {
       return;
     }
 
-    const guild = interaction.guild as Guild;
-
     const focusedAutoCompleteAction = interaction.options.getFocused(true);
     const typeIndex = interaction.options.getInteger('type');
     const type =
@@ -213,10 +212,7 @@ export class PlayItemCommand {
     }
 
     const hintList = hints.map((hint) => {
-      let title = hint.toString();
-      if (title.length > 100) {
-        title = `${title.substring(0, 90)}...`;
-      }
+      const title = trimStringToFixedLength(hint.toString(), 90);
 
       return {
         name: title,

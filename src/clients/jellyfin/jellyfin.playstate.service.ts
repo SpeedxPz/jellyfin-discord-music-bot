@@ -109,6 +109,7 @@ export class JellyinPlaystateService {
     }
 
     try {
+      jellyfin.isPause = true;
       await jellyfin.playstateApi.reportPlaybackProgress({
         playbackProgressInfo: {
           IsPaused: true,
@@ -131,6 +132,7 @@ export class JellyinPlaystateService {
     }
 
     try {
+      jellyfin.isPause = false;
       await jellyfin.playstateApi.reportPlaybackProgress({
         playbackProgressInfo: {
           IsPaused: false,
@@ -161,6 +163,7 @@ export class JellyinPlaystateService {
         jellyfin.playstateApi.reportPlaybackProgress(
           {
             playbackProgressInfo: {
+              IsPaused: jellyfin.isPause,
               ItemId: jellyfin.track.id,
               PositionTicks: jellyfin.progress * 10000,
             },

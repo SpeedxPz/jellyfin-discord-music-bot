@@ -3,7 +3,7 @@ import { Param, ParamType } from '@discord-nestjs/core';
 export class RemoveTrackCommandParams {
   @Param({
     required: true,
-    description: 'Track Number from queue command',
+    description: 'Track number from /queue command',
     type: ParamType.INTEGER,
     minValue: 0,
     maxValue: 10000,

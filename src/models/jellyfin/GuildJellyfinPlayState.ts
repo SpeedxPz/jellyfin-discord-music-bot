@@ -9,5 +9,6 @@ export class GuildJellyfinPlayState {
   track: Track;
   progress: number;
   initialized: boolean;
+  isPause: boolean;
   nextUpdate: Date;
 }

@@ -9,7 +9,7 @@ import { defaultMemberPermissions } from 'src/utils/environment';
 @Injectable()
 @Command({
   name: 'disconnect',
-  description: 'Join your current voice channel',
+  description: 'Disconnect bot from the voice channel and clear all queue',
   defaultMemberPermissions: defaultMemberPermissions,
 })
 export class DisconnectCommand {

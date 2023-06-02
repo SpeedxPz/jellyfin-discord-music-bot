@@ -10,6 +10,8 @@ import { Track } from 'src/models/shared/Track';
 import { NoAudioIsPlaying } from './exception/no-audio-is-playing';
 import { NoNextTrackToPlay } from './exception/no-next-track-to-play.exception';
 import { NoPreviousTrackToPlay } from './exception/no-prev-track-to-play.exception';
+import { JellyfinWebSocketService } from 'src/clients/jellyfin/jellyfin.websocket.service';
+import { PlaybackEnqueueEvent } from 'src/models/playback/PlaybackEnqueueEvent';
 
 @Injectable()
 export class PlaybackService {
@@ -20,6 +22,7 @@ export class PlaybackService {
     private readonly eventEmitter: EventEmitter2,
     private readonly jellyfinService: JellyfinService,
     private readonly jellyfinStreamBuilder: JellyfinStreamBuilderService,
+    private readonly jellyfinWebsocketService: JellyfinWebSocketService,
   ) {
     this.instances = {};
   }
@@ -33,6 +36,7 @@ export class PlaybackService {
 
   async init(guildId: string, guildName: string) {
     await this.jellyfinService.init(guildId, guildName);
+    await this.jellyfinWebsocketService.initializeAndConnect(guildId);
   }
 
   async disconnect(guildId: string) {
@@ -41,6 +45,7 @@ export class PlaybackService {
     instance.pause = false;
     instance.queue.clear();
     await this.jellyfinService.disconnect(guildId);
+    await this.jellyfinWebsocketService.disconnect(guildId);
   }
 
   async sleep(ms) {
@@ -71,21 +76,42 @@ export class PlaybackService {
     return instance.queue.removeTrack(trackNo);
   }
 
-  pause(guildId: string): boolean {
+  togglePause(guildId: string): boolean {
     const instance = this.getOrCreatePlaybackInstance(guildId);
     if (!instance.playing) {
       throw new NoAudioIsPlaying();
     }
 
     if (instance.pause) {
-      this.eventEmitter.emit('discord.audioplayer.unpause', guildId);
-      instance.pause = false;
+      this.unpause(guildId);
       return false;
     } else {
-      this.eventEmitter.emit('discord.audioplayer.pause', guildId);
-      instance.pause = true;
+      this.pause(guildId);
       return true;
     }
+  }
+
+  isPlaying(guildId: string) {
+    const instance = this.getOrCreatePlaybackInstance(guildId);
+    return instance.playing;
+  }
+
+  unpause(guildId: string) {
+    const instance = this.getOrCreatePlaybackInstance(guildId);
+    if (!instance.playing) {
+      throw new NoAudioIsPlaying();
+    }
+    this.eventEmitter.emit('discord.audioplayer.unpause', guildId);
+    instance.pause = false;
+  }
+
+  pause(guildId: string) {
+    const instance = this.getOrCreatePlaybackInstance(guildId);
+    if (!instance.playing) {
+      throw new NoAudioIsPlaying();
+    }
+    this.eventEmitter.emit('discord.audioplayer.pause', guildId);
+    instance.pause = true;
   }
 
   previous(guildId: string) {
@@ -190,6 +216,53 @@ export class PlaybackService {
   getQueueLength(guildId: string): number {
     const instance = this.getOrCreatePlaybackInstance(guildId);
     return instance.queue.getLength();
+  }
+
+  @OnEvent('playback.command.enqueue')
+  handleOnPlaybackEnqueue(event: PlaybackEnqueueEvent) {
+    this.enqueue(event.guild_id, event.tracks);
+  }
+
+  @OnEvent('playback.command.togglePause')
+  handleOnPlaybackTogglePause(guildId: string) {
+    try {
+      this.togglePause(guildId);
+    } catch {}
+  }
+
+  @OnEvent('playback.command.pause')
+  handleOnPlaybackPause(guildId: string) {
+    try {
+      this.pause(guildId);
+    } catch {}
+  }
+
+  @OnEvent('playback.command.stop')
+  handleOnPlaybackStop(guildId: string) {
+    try {
+      this.stop(guildId);
+    } catch {}
+  }
+
+  @OnEvent('playback.command.next')
+  handleOnPlaybackNext(guildId: string) {
+    try {
+      this.next(guildId);
+    } catch {}
+  }
+
+  @OnEvent('playback.command.previous')
+  handleOnPlaybackPrevious(guildId: string) {
+    try {
+      this.previous(guildId);
+    } catch {}
+  }
+
+  @OnEvent('playback.command.unpause')
+  handleOnPlaybackUnPause(guildId: string) {
+    try {
+      this.unpause(guildId);
+    } catch {}
   }
 
   @OnEvent('discord.audioplayer.event.play.stopped')

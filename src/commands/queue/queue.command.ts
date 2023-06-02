@@ -60,7 +60,7 @@ export class QueueCommand {
   async handler(
     @InteractionEvent(SlashCommandPipe) dto: QueueCommandParams,
     @IA() interaction: CommandInteraction,
-    @AppliedCollectors(0) collector: InteractionCollector<ButtonInteraction>,
+    @AppliedCollectors(0) _collector: InteractionCollector<ButtonInteraction>,
   ): Promise<void> {
     let page = dto.page ?? -1;
     const guild = interaction.guild as Guild;

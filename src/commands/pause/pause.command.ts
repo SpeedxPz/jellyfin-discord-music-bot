@@ -22,7 +22,7 @@ export class PausePlaybackCommand {
   async handler(@IA() interaction: CommandInteraction): Promise<void> {
     const guild = interaction.guild as Guild;
     try {
-      const shouldBePaused = this.playbackService.pause(guild.id);
+      const shouldBePaused = this.playbackService.togglePause(guild.id);
       await interaction.reply({
         embeds: [
           this.discordMessageService.buildMessage({

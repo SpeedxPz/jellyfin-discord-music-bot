@@ -3,6 +3,7 @@ import { JellyinPlaystateService } from './jellyfin.playstate.service';
 import { JellyfinSearchService } from './jellyfin.search.service';
 import { JellyfinService } from './jellyfin.service';
 import { JellyfinStreamBuilderService } from './jellyfin.stream.builder.service';
+import { JellyfinWebSocketService } from './jellyfin.websocket.service';
 
 @Module({
   imports: [],
@@ -12,13 +13,13 @@ import { JellyfinStreamBuilderService } from './jellyfin.stream.builder.service'
     JellyfinSearchService,
     JellyfinStreamBuilderService,
     JellyinPlaystateService,
-    // JellyfinWebSocketService,
+    JellyfinWebSocketService,
   ],
   exports: [
     JellyfinService,
     JellyfinSearchService,
     JellyfinStreamBuilderService,
-    // JellyfinWebSocketService,
+    JellyfinWebSocketService,
   ],
 })
 export class JellyfinClientModule implements OnModuleInit, OnModuleDestroy {

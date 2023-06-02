@@ -12,11 +12,13 @@ import { JellyinPlaystateService } from './jellyfin.playstate.service';
 export class JellyfinService {
   private readonly logger = new Logger(JellyfinService.name);
   private jellyfinSession: { [key: string]: GuildJellyfin };
+  private instanceId: number;
 
   constructor(
     private eventEmitter: EventEmitter2,
     private readonly jellyfinPlayState: JellyinPlaystateService,
   ) {
+    this.instanceId = Math.random() * (100000 - 1) + 1;
     this.jellyfinSession = {};
   }
 
@@ -36,7 +38,7 @@ export class JellyfinService {
         version: Constants.Metadata.Version.All(),
       },
       deviceInfo: {
-        id: `jellyfin-discord-bot-${guildId}`,
+        id: `jellyfin-discord-bot-${this.instanceId}-${guildId}`,
         name: client_name,
       },
     });
@@ -87,7 +89,7 @@ export class JellyfinService {
   }
 
   disconnectGracefully() {
-    for (const [key, value] of Object.entries(this.jellyfinSession)) {
+    for (const [key] of Object.entries(this.jellyfinSession)) {
       const jellyfin = this.jellyfinSession[key];
       if (jellyfin.api) {
         jellyfin.api.logout();
