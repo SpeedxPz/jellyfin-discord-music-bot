@@ -28,7 +28,7 @@ export class JellyfinService {
     return this.jellyfinSession[guildId];
   }
 
-  async init(guildId: string, client_name: string = 'Jellyfin Discord Bot') {
+  async init(guildId: string, client_name = 'Jellyfin Discord Bot') {
     const jellyfin = this.getOrCreateJellyfinSession(guildId);
     jellyfin.jellyfin = new Jellyfin({
       clientInfo: {

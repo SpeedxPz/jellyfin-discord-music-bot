@@ -11,7 +11,6 @@ import { NoAudioIsPlaying } from './exception/no-audio-is-playing';
 import { NoNextTrackToPlay } from './exception/no-next-track-to-play.exception';
 import { NoPreviousTrackToPlay } from './exception/no-prev-track-to-play.exception';
 
-
 @Injectable()
 export class PlaybackService {
   private readonly logger = new Logger(PlaybackService.name);
@@ -65,6 +64,11 @@ export class PlaybackService {
     if (instance.playing === false && instance.pause === false) {
       this.playNext(guildId);
     }
+  }
+
+  removeTrack(guildId: string, trackNo: number): boolean {
+    const instance = this.getOrCreatePlaybackInstance(guildId);
+    return instance.queue.removeTrack(trackNo);
   }
 
   pause(guildId: string): boolean {

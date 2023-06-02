@@ -6,6 +6,4 @@ export class DiscordProgressEvent {
     this.guildId = guildId;
     this.progress = progress;
   }
-
-  destroy(): void {}
 }

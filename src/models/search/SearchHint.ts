@@ -1,7 +1,5 @@
 import { MediaKind } from './MediaKind.enum';
 
-
-
 export class SearchHint {
   constructor(
     protected readonly id: string,
@@ -25,7 +23,6 @@ export class SearchHint {
     return this.id;
   }
 }
-
 
 // import {
 //   BaseItemDto,

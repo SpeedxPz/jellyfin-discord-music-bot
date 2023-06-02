@@ -158,12 +158,17 @@ export class JellyinPlaystateService {
       jellyfin.progress = event.progress;
 
       try {
-        jellyfin.playstateApi.reportPlaybackProgress({
-          playbackProgressInfo: {
-            ItemId: jellyfin.track.id,
-            PositionTicks: jellyfin.progress * 10000,
+        jellyfin.playstateApi.reportPlaybackProgress(
+          {
+            playbackProgressInfo: {
+              ItemId: jellyfin.track.id,
+              PositionTicks: jellyfin.progress * 10000,
+            },
           },
-        });
+          {
+            timeout: 5000,
+          },
+        );
       } catch {}
     }
   }

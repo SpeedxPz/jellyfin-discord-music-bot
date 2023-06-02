@@ -7,13 +7,11 @@ export class GuildPlayBack {
   pause: boolean;
   progress: number;
 
-  constructor(id: string = '') {
+  constructor(id = '') {
     this.id = id;
     this.queue = new PlayQueue();
     this.playing = false;
     this.pause = false;
     this.progress = 0;
   }
-
-  destroy(): void {}
 }

@@ -1,4 +1,4 @@
-import { AudioPlayer, AudioResource, VoiceConnection } from "@discordjs/voice";
+import { AudioPlayer, AudioResource, VoiceConnection } from '@discordjs/voice';
 
 export class GuildVoice {
   id: string;

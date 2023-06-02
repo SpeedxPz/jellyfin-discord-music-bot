@@ -31,6 +31,24 @@ export class PlayQueue {
     this.tracks.splice(this.activeTrackIndex + 1, 0, ...tracks);
   }
 
+  removeTrack(trackNo: number): boolean {
+    if (this.tracks.length === 0) {
+      return false;
+    }
+
+    const trackIndex = trackNo - 1;
+    if (trackIndex >= this.tracks.length || trackIndex < 0) {
+      return false;
+    }
+
+    if (trackIndex == this.activeTrackIndex) {
+      return false;
+    }
+
+    this.tracks.splice(trackIndex, 1);
+    return true;
+  }
+
   private getMaxIndex() {
     return this.tracks.length - 1;
   }

@@ -15,7 +15,7 @@ export class GuildJellyfin {
   }
 
   destroy(): void {
-    this.userId = "";
+    this.userId = '';
     this.connected = false;
   }
 }

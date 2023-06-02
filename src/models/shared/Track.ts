@@ -39,7 +39,7 @@ export class Track {
     album: string,
     artist: string,
     duration: number,
-    imageURL: string = '',
+    imageURL = '',
   ) {
     this.id = id;
     this.name = name;

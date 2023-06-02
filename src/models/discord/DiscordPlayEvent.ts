@@ -10,6 +10,4 @@ export class DiscordPlayEvent {
     this.track = track;
     this.streamURL = streamURL;
   }
-
-  destroy(): void {}
 }

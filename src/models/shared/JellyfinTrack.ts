@@ -1,5 +1,3 @@
-import { Track } from "./Track";
+import { Track } from './Track';
 
-export class JellyfinTrack extends Track {
-
-}
+export class JellyfinTrack extends Track {}
