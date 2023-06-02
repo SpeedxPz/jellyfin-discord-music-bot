@@ -1,6 +1,4 @@
 import {
-  AudioPlayer,
-  VoiceConnection,
   AudioResource,
   joinVoiceChannel,
   getVoiceConnection,
@@ -248,7 +246,7 @@ export class DiscordVoiceService {
 
   @Interval(1000)
   private checkAudioResourcePlayback() {
-    for (const [key, value] of Object.entries(this.voiceSession)) {
+    for (const [key] of Object.entries(this.voiceSession)) {
       const voice = this.voiceSession[key];
       if (!voice.audioResource) {
         continue;

@@ -64,14 +64,15 @@ export class QueueCommand {
   ): Promise<void> {
     let page = dto.page ?? -1;
     const guild = interaction.guild as Guild;
-    await interaction.reply(
-      this.getReplyForPage(guild.id, page) as InteractionReplyOptions,
-    );
 
     if (page == -1) {
       const trackNo = this.playbackService.getCurrentTrackNo(guild.id);
       page = Math.floor((trackNo - 1) / 10);
     }
+
+    await interaction.reply(
+      this.getReplyForPage(guild.id, page) as InteractionReplyOptions,
+    );
 
     this.pageData.set(interaction.id, {
       page,

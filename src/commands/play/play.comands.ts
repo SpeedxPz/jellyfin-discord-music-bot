@@ -25,7 +25,7 @@ import { PlaybackService } from '../../playback/playback.service';
 import { formatMillisecondsAsHumanReadable } from '../../utils/timeUtils';
 
 import { defaultMemberPermissions } from 'src/utils/environment';
-import { PlayCommandParams, SearchType, Mode } from './play.params.ts';
+import { PlayCommandParams, SearchType, Mode, Position } from './play.params';
 import { Track } from 'src/models/shared/Track';
 import { NotInVoiceException } from 'src/clients/discord/exception/not-in-voice.exception';
 
@@ -144,7 +144,12 @@ export class PlayItemCommand {
         .map(({ value }) => value);
     }
 
-    this.playbackService.enqueue(guild.id, tracks);
+    if (dto.position == Position.EndOfQueue) {
+      this.playbackService.enqueue(guild.id, tracks);
+    } else {
+      this.playbackService.enqueueNext(guild.id, tracks);
+    }
+
     const totalLength = this.playbackService.getQueueLength(guild.id);
 
     await interaction.followUp({

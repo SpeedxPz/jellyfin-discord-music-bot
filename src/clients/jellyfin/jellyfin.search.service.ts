@@ -245,7 +245,7 @@ export class JellyfinSearchService {
 
   private buildImageURL(id: string): string {
     getEnvironmentVariables().JELLYFIN_SERVER_ADDRESS;
-    if (!getEnvironmentVariables().JELLYFIN_PUBLIC_IMAGE_SUPPORT) {
+    if (!getEnvironmentVariables().JELLYFIN_INTERNAL_IMAGE_ENABLED) {
       return '';
     }
     const baseURL = getEnvironmentVariables().JELLYFIN_SERVER_ADDRESS;

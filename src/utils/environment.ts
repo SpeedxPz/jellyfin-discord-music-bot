@@ -8,7 +8,7 @@ env.config();
 export const environmentVariablesSchema = z.object({
   DISCORD_CLIENT_TOKEN: z.string(),
   JELLYFIN_SERVER_ADDRESS: z.string().url(),
-  JELLYFIN_PUBLIC_IMAGE_SUPPORT: z
+  JELLYFIN_INTERNAL_IMAGE_ENABLED: z
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
@@ -43,5 +43,3 @@ export const defaultMemberPermissions: PermissionResolvable | undefined =
   getEnvironmentVariables().ALLOW_EVERYONE_FOR_DEFAULT_PERMS
     ? 'ViewChannel'
     : undefined;
-
-

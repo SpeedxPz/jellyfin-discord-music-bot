@@ -69,12 +69,14 @@ export class JellyinPlaystateService {
         `Reporting playback start on track '${event.track.id}'`,
       );
       jellyfin.track = event.track;
-      await jellyfin.playstateApi.reportPlaybackStart({
-        playbackStartInfo: {
-          ItemId: event.track.id,
-          PositionTicks: 0,
-        },
-      });
+      try {
+        await jellyfin.playstateApi.reportPlaybackStart({
+          playbackStartInfo: {
+            ItemId: event.track.id,
+            PositionTicks: 0,
+          },
+        });
+      } catch {}
     }
   }
 
@@ -143,18 +145,26 @@ export class JellyinPlaystateService {
   handleOnDiscordAudioProgress(event: DiscordProgressEvent) {
     const jellyfin = this.getOrCreateJellyfinSession(event.guildId);
     if (!jellyfin.initialized) return;
-    jellyfin.progress = event.progress;
 
-    try {
-      jellyfin.playstateApi.reportPlaybackProgress({
-        playbackProgressInfo: {
-          ItemId: jellyfin.track.id,
-          PositionTicks: jellyfin.progress * 10000,
-        },
-      });
-      this.logger.verbose(
-        `Reported playback progress ${jellyfin.progress} to Jellyfin for item ${jellyfin.track.id}`,
-      );
-    } catch {}
+    // Update only every 5 seconds.
+    const currentDateTime = new Date();
+    if (
+      currentDateTime > jellyfin.nextUpdate ||
+      jellyfin.nextUpdate === undefined
+    ) {
+      currentDateTime.setSeconds(currentDateTime.getSeconds() + 5);
+      jellyfin.nextUpdate = currentDateTime;
+
+      jellyfin.progress = event.progress;
+
+      try {
+        jellyfin.playstateApi.reportPlaybackProgress({
+          playbackProgressInfo: {
+            ItemId: jellyfin.track.id,
+            PositionTicks: jellyfin.progress * 10000,
+          },
+        });
+      } catch {}
+    }
   }
 }

@@ -28,6 +28,11 @@ function getLoggingLevels(): LogLevel[] {
 export let app: INestApplication;
 
 async function bootstrap() {
+  // Catch axios ECONRESET and node exit the process...
+  process.on('uncaughtException', function (err) {
+    console.error(err.stack);
+  });
+
   app = await NestFactory.create(AppModule, {
     logger: getLoggingLevels(),
   });

@@ -14,6 +14,11 @@ export enum Mode {
   Shuffle = 1,
 }
 
+export enum Position {
+  EndOfQueue = 0,
+  PlayNext = 1,
+}
+
 export class PlayCommandParams {
   @Param({
     required: true,
@@ -29,6 +34,13 @@ export class PlayCommandParams {
   @Choice(Mode)
   @Param({ description: 'Add mode', type: ParamType.INTEGER })
   mode: Mode | undefined;
+
+  @Choice(Position)
+  @Param({
+    description: 'Position to add track to queue',
+    type: ParamType.INTEGER,
+  })
+  position: Position | undefined;
 
   static getBaseItemKinds(type: SearchType | undefined) {
     switch (type) {

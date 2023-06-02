@@ -11,7 +11,6 @@ import { NoAudioIsPlaying } from './exception/no-audio-is-playing';
 import { NoNextTrackToPlay } from './exception/no-next-track-to-play.exception';
 import { NoPreviousTrackToPlay } from './exception/no-prev-track-to-play.exception';
 
-// import { Playlist } from '../models/shared/Playlist';
 
 @Injectable()
 export class PlaybackService {
@@ -57,6 +56,15 @@ export class PlaybackService {
       this.playNext(guildId);
     }
     return length;
+  }
+
+  enqueueNext(guildId: string, tracks: Track[]): void {
+    const instance = this.getOrCreatePlaybackInstance(guildId);
+    instance.queue.enqueueNext(tracks);
+
+    if (instance.playing === false && instance.pause === false) {
+      this.playNext(guildId);
+    }
   }
 
   pause(guildId: string): boolean {

@@ -23,6 +23,14 @@ export class PlayQueue {
     return length;
   }
 
+  enqueueNext(tracks: Track[]) {
+    if (tracks.length === 0) {
+      return 0;
+    }
+
+    this.tracks.splice(this.activeTrackIndex + 1, 0, ...tracks);
+  }
+
   private getMaxIndex() {
     return this.tracks.length - 1;
   }
