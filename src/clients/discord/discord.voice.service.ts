@@ -49,6 +49,9 @@ export class DiscordVoiceService {
     const resource = createAudioResource(event.streamURL, {
       inlineVolume: true,
     });
+    if (resource.volume) {
+      resource.volume.setVolume(0.5);
+    }
     this.playResource(event.guild_id, resource, event.track);
   }
 
