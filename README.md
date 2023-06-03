@@ -14,41 +14,44 @@
 <hr/>
 <br/>
 
+## 💻 What is this repository aiming for
+To be clear, Yes! this bot is named Jellyfin Discord Bot. But actually I'm aiming to support the other source provider as well such as Youtube and may have some other private provider that i can't tell you how to enable or use it and might require the external service that i can't provide the code for.     
+     
+This is my hobby project, Feel free to use or contribute as you want!
 
 ## ✨ Features
-
-- Leighweight and extendable using the [Nest](https://github.com/nestjs/nest) framework
-- Easy usage with Discord command system (eg. ``/play``, ``/pause``, ...)
-- Fast and validated configuration using environment variables
-- Typesafe code for quicker development and less bugs
+- Play the music from your existsing Jellyfin library!
+- Multiple discord server support (All server share the same jellyfin library)
 - Supports ``Music``, ``Playlists`` and ``Albums`` from your Jellyfin instance
+- Easy usage with Discord command system (eg. ``/play``, ``/pause``, ...)
+
 
 ## 📌 About this fork
-This project was fork from [manual-rw on Github](https://github.com/manuel-rw/jellyfin-discord-music-bot/). I came across and interested in this project,
-By the way, The many things is missing from that repo. So i made a fork and try to do my best to fit this bot to my use cases.
+This project was fork from [manual-rw on Github](https://github.com/manuel-rw/jellyfin-discord-music-bot/) for my own purpose. I came across and interested in this project,
+By the way, The many things is missing from that repo and some of them is just my needs. So i made a fork and try to do my best to fit this bot to my use cases.
 
 ## ⛔ Limitations
-
-- Bot does not support shards (for now). This means, you cannot use it in multiple servers concurrently.
-- Album covers are not visible, unless they are remote (eg. provided by external metadata provider)
-- Streaming any video content in voice channels (See [this issue](https://github.com/discordjs/discord.js/issues/4116))
+- Bot can be use on multiple discord servers concurrently, But sharding is not support for large amount of server (1000+)
+- Album covers are not visible, unless you enable the JELLYFIN_INTERNAL_IMAGE_ENABLED which require you jellyfin instance to be public and will expose your jellyfin server address
+- Streaming any video content in voice channels (Discord Bot API Limitation)
 
 ## 🚀 Installation
 
-Docker Image     
-     
-Latest release
-```registry.takumipro.dev/public/jellyfin-discord-music-bot:latest```
-
-Development image
-```registry.takumipro.dev/public/jellyfin-discord-music-bot:dev```
-
 Please check out the Wiki section in the repository for installation instructions:
 
-https://github.com/manuel-rw/jellyfin-discord-music-bot/wiki
+https://github.com/SpeedxPz/jellyfin-discord-music-bot/wiki
 
+For docker image you can choose your suitable image     
+     
+Stable release
+```
+registry.takumipro.dev/public/jellyfin-discord-music-bot:latest
+```
 
-
+Development image (New feature frequenly but also buggy and unstable)
+```
+registry.takumipro.dev/public/jellyfin-discord-music-bot:dev
+```
 
 ## 💻 Development
 
