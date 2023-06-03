@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import axios from 'axios';
 import { formatRelative, parseISO } from 'date-fns';
-import { ActionRowBuilder, ButtonStyle, Client } from 'discord.js';
+import { ActionRowBuilder, ButtonStyle, Client, Guild } from 'discord.js';
 import { DiscordMessageService } from '../clients/discord/discord.message.service';
 import { GithubRelease } from '../models/github-release';
 import { Constants } from '../utils/constants';
@@ -73,8 +73,11 @@ export class UpdatesService {
     const isoDate = parseISO(latestVersion.published_at);
     const relativeReadable = formatRelative(isoDate, new Date());
 
-    guilds.forEach(async (guild) => {
+    const notifiedOwner: { [key: string]: string } = {};
+    for (const guild of guilds.values()) {
       const owner = await guild.fetchOwner();
+      if (owner.id in notifiedOwner) continue;
+      notifiedOwner[owner.id] = owner.id;
 
       await owner.send({
         content: 'Update notification',
@@ -100,7 +103,7 @@ export class UpdatesService {
         ],
         components: [actionRow],
       });
-    });
+    }
   }
 
   private async fetchLatestGithubRelease(): Promise<GithubRelease | undefined> {
