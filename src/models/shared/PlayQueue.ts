@@ -10,11 +10,11 @@ export class PlayQueue {
   }
 
   /**
-   * Add new track(-s) to the playlist
+   * Add new track(-s) to the bottom of the queue
    * @param tracks the tracks that should be added
-   * @returns the new lendth of the tracks in the playlist
+   * @returns the new length of the tracks in the playlist
    */
-  enqueueTracks(tracks: Track[]) {
+  enqueueTracks(tracks: Track[]): number {
     if (tracks.length === 0) {
       return 0;
     }
@@ -23,14 +23,25 @@ export class PlayQueue {
     return length;
   }
 
-  enqueueNext(tracks: Track[]) {
+  /**
+   * Add new track(-s) to the next of current playing in the queue
+   * @param tracks the tracks that should be added
+   * @returns the new length of the tracks in the playlist
+   */
+  enqueueNext(tracks: Track[]): number {
     if (tracks.length === 0) {
       return 0;
     }
 
     this.tracks.splice(this.activeTrackIndex + 1, 0, ...tracks);
+    return this.tracks.length;
   }
 
+  /**
+   * remove a track from the queue
+   * @param trackNo track number that should be remove
+   * @returns true for success or false for failure
+   */
   removeTrack(trackNo: number): boolean {
     if (this.tracks.length === 0) {
       return false;
@@ -53,6 +64,10 @@ export class PlayQueue {
     return this.tracks.length - 1;
   }
 
+  /**
+   * get current active track in the queue
+   * @returns if have active track will return the track otherwise undefined
+   */
   getActiveTrack(): Track | undefined {
     if (this.tracks.length === 0) {
       return undefined;
@@ -69,15 +84,27 @@ export class PlayQueue {
     return this.tracks[this.activeTrackIndex];
   }
 
+  /**
+   * get current active track number in queue
+   * @returns active track number in the queue
+   */
   getActiveTrackNo(): number {
     return this.activeTrackIndex + 1;
   }
 
-  clear() {
+  /**
+   * clear all tracks in the queue
+   * @returns void
+   */
+  clear(): void {
     this.activeTrackIndex = -1;
     this.tracks = [];
   }
 
+  /**
+   * set next track in the queue to be a active track
+   * @returns true for success or false for failure
+   */
   setNextTrackAsActiveTrack(): boolean {
     if (this.activeTrackIndex >= this.getMaxIndex()) {
       return false;
@@ -87,6 +114,11 @@ export class PlayQueue {
     return true;
   }
 
+  /**
+   * set specific track in the queue to be a active track
+   * @param trackNo track number
+   * @returns true for success or false for failure
+   */
   setTrackNoAsActiveTrack(trackNo: number): boolean {
     if (trackNo > this.tracks.length || trackNo < 1) {
       return false;
@@ -96,6 +128,10 @@ export class PlayQueue {
     return true;
   }
 
+  /**
+   * set previous track in the queue to be a active track
+   * @returns true for success or false for failure
+   */
   setPreviousTrackAsActiveTrack(): boolean {
     if (this.activeTrackIndex <= 0) {
       return false;

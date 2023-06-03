@@ -25,13 +25,15 @@ export class Track {
    */
   readonly duration: number;
 
+  /**
+   * The image url for this track
+   */
   readonly imageURL: string;
 
-  playing: boolean;
-
   /**
-   * A result object that contains a collection of images that are available outside the current network.
+   * Is this track playing
    */
+  playing: boolean;
 
   constructor(
     id: string,
