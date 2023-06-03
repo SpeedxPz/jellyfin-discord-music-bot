@@ -1,10 +1,3 @@
-import {
-  RemoteImageInfo,
-  RemoteImageResult,
-} from '@jellyfin/sdk/lib/generated-client/models';
-
-import { JellyfinStreamBuilderService } from '../../clients/jellyfin/jellyfin.stream.builder.service';
-
 export class Track {
   /**
    * The identifier of this track, structured as a UID.
@@ -18,50 +11,52 @@ export class Track {
   readonly name: string;
 
   /**
+   * The artist of the track
+   */
+  readonly artist: string;
+
+  /**
+   * The album of the track
+   */
+  readonly album: string;
+
+  /**
    * The duration of the track
    */
   readonly duration: number;
 
   /**
-   * A result object that contains a collection of images that are available outside the current network.
+   * The image url for this track
    */
-  remoteImages?: RemoteImageResult;
+  readonly imageURL: string;
 
+  /**
+   * Is this track playing
+   */
   playing: boolean;
-
-  playbackProgress: number;
 
   constructor(
     id: string,
     name: string,
+    album: string,
+    artist: string,
     duration: number,
-    remoteImages?: RemoteImageResult,
+    imageURL = '',
   ) {
     this.id = id;
     this.name = name;
+    this.album = album;
+    this.artist = artist;
     this.duration = duration;
-    this.remoteImages = remoteImages;
+    this.imageURL = imageURL;
     this.playing = false;
-    this.playbackProgress = 0;
   }
 
   getDuration() {
     return this.duration;
   }
 
-  getStreamUrl(streamBuilder: JellyfinStreamBuilderService) {
-    return streamBuilder.buildStreamUrl(this.id, 96000);
-  }
-
-  getRemoteImages(): RemoteImageInfo[] {
-    return this.remoteImages?.Images ?? [];
-  }
-
-  getPlaybackProgress() {
-    return this.playbackProgress;
-  }
-
-  updatePlaybackProgress(progress: number) {
-    this.playbackProgress = progress;
+  getImageURL(): string {
+    return this.imageURL ? this.imageURL : '';
   }
 }

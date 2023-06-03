@@ -7,28 +7,28 @@ import {
   On,
 } from '@discord-nestjs/core';
 
-import { RemoteImageInfo } from '@jellyfin/sdk/lib/generated-client/models';
-
 import { Injectable } from '@nestjs/common';
 import { Logger } from '@nestjs/common/services';
 
 import {
   CommandInteraction,
   Events,
+  Guild,
   GuildMember,
   Interaction,
-  InteractionReplyOptions,
 } from 'discord.js';
 
 import { DiscordMessageService } from '../../clients/discord/discord.message.service';
 import { DiscordVoiceService } from '../../clients/discord/discord.voice.service';
 import { JellyfinSearchService } from '../../clients/jellyfin/jellyfin.search.service';
-import { SearchHint } from '../../models/search/SearchHint';
 import { PlaybackService } from '../../playback/playback.service';
 import { formatMillisecondsAsHumanReadable } from '../../utils/timeUtils';
 
 import { defaultMemberPermissions } from 'src/utils/environment';
-import { PlayCommandParams, SearchType, Mode } from './play.params.ts';
+import { PlayCommandParams, SearchType, Mode, Position } from './play.params';
+import { Track } from 'src/models/shared/Track';
+import { NotInVoiceException } from 'src/clients/discord/exception/not-in-voice.exception';
+import { trimStringToFixedLength } from 'src/utils/stringUtils/stringUtils';
 
 @Injectable()
 @Command({
@@ -53,21 +53,32 @@ export class PlayItemCommand {
   ) {
     await interaction.deferReply({ ephemeral: false });
 
-    const baseItems = PlayCommandParams.getBaseItemKinds(dto.type);
+    const guild = interaction.guild as Guild;
 
-    let item: SearchHint | undefined;
+    const mediaKind = PlayCommandParams.getMediaKinds(dto.type);
+
+    let tracks: Track[];
     if (dto.name.startsWith('native-')) {
-      item = await this.jellyfinSearchService.getById(
+      tracks = await this.jellyfinSearchService.getTracksById(
         dto.name.replace('native-', ''),
-        baseItems,
+        mediaKind,
       );
     } else {
-      item = (
-        await this.jellyfinSearchService.searchItem(dto.name, 1, baseItems)
+      const hint = (
+        await this.jellyfinSearchService.searchItem(dto.name, 1, mediaKind)
       ).find((x) => x);
+
+      if (!hint) {
+        tracks = [];
+      } else {
+        tracks = await this.jellyfinSearchService.getTracksById(
+          hint.getId(),
+          mediaKind,
+        );
+      }
     }
 
-    if (!item) {
+    if (tracks.length <= 0) {
       await interaction.followUp({
         embeds: [
           this.discordMessageService.buildMessage({
@@ -83,28 +94,49 @@ export class PlayItemCommand {
 
     const guildMember = interaction.member as GuildMember;
 
-    const tryResult =
+    try {
       this.discordVoiceService.tryJoinChannelAndEstablishVoiceConnection(
+        guild,
         guildMember,
       );
-
-    if (!tryResult.success) {
-      const replyOptions = tryResult.reply as InteractionReplyOptions;
-      await interaction.editReply({
-        embeds: replyOptions.embeds,
-      });
+      await this.playbackService.init(guild.id, guild.name);
+    } catch (e) {
+      if (e instanceof NotInVoiceException) {
+        await interaction.editReply({
+          embeds: [
+            this.discordMessageService.buildMessage({
+              title: 'Unable to join your channel',
+              description:
+                "I am unable to join your channel, because you don't seem to be in a voice channel. Connect to a channel first to use this command",
+            }),
+          ],
+        });
+      } else {
+        await interaction.editReply({
+          embeds: [
+            this.discordMessageService.buildMessage({
+              title: 'Unable to join your channel',
+              description:
+                'I am unable to join your channel, Unknown error. This should not happen!',
+            }),
+          ],
+        });
+      }
       return;
     }
 
-    let tracks = await item.toTracks(this.jellyfinSearchService);
     this.logger.debug(`Extracted ${tracks.length} tracks from the search item`);
     const reducedDuration = tracks.reduce(
       (sum, item) => sum + item.duration,
       0,
     );
+
     this.logger.debug(
       `Adding ${tracks.length} tracks with a duration of ${reducedDuration} ticks`,
     );
+
+    const images = tracks.flatMap((track) => track.getImageURL());
+    const image: string = images.length > 0 ? images[0] : '';
 
     if (dto.mode == Mode.Shuffle) {
       tracks = tracks
@@ -113,11 +145,13 @@ export class PlayItemCommand {
         .map(({ value }) => value);
     }
 
-    this.playbackService.getPlaylistOrDefault().enqueueTracks(tracks);
+    if (dto.position == Position.EndOfQueue) {
+      this.playbackService.enqueue(guild.id, tracks);
+    } else {
+      this.playbackService.enqueueNext(guild.id, tracks);
+    }
 
-    const remoteImages = tracks.flatMap((track) => track.getRemoteImages());
-    const remoteImage: RemoteImageInfo | undefined =
-      remoteImages.length > 0 ? remoteImages[0] : undefined;
+    const totalLength = this.playbackService.getQueueLength(guild.id);
 
     await interaction.followUp({
       embeds: [
@@ -126,14 +160,15 @@ export class PlayItemCommand {
             tracks.length
           } tracks (${formatMillisecondsAsHumanReadable(
             reducedDuration,
-          )}) to your playlist (${this.playbackService
-            .getPlaylistOrDefault()
-            .getLength()} tracks)`,
+          )}) to your queue`,
+          description: `You have ${totalLength} tracks (${formatMillisecondsAsHumanReadable(
+            reducedDuration,
+          )}) in this queue`,
           mixin(embedBuilder) {
-            if (!remoteImage?.Url) {
+            if (!image) {
               return embedBuilder;
             }
-            return embedBuilder.setThumbnail(remoteImage.Url);
+            return embedBuilder.setThumbnail(image);
           },
         }),
       ],
@@ -168,7 +203,7 @@ export class PlayItemCommand {
     const hints = await this.jellyfinSearchService.searchItem(
       searchQuery,
       20,
-      PlayCommandParams.getBaseItemKinds(type as SearchType),
+      PlayCommandParams.getMediaKinds(type as SearchType),
     );
 
     if (hints.length === 0) {
@@ -177,10 +212,7 @@ export class PlayItemCommand {
     }
 
     const hintList = hints.map((hint) => {
-      let title = hint.toString();
-      if (title.length > 100) {
-        title = `${title.substring(0, 90)}...`;
-      }
+      const title = trimStringToFixedLength(hint.toString(), 90);
 
       return {
         name: title,

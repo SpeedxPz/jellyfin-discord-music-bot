@@ -1,20 +1,19 @@
 import { Module, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { JellyinPlaystateService } from './jellyfin.playstate.service';
 import { JellyfinSearchService } from './jellyfin.search.service';
 import { JellyfinService } from './jellyfin.service';
 import { JellyfinStreamBuilderService } from './jellyfin.stream.builder.service';
-import { JellyinPlaystateService } from './jellyfin.playstate.service';
 import { JellyfinWebSocketService } from './jellyfin.websocket.service';
-import { PlaybackModule } from './../../playback/playback.module';
 
 @Module({
-  imports: [PlaybackModule],
+  imports: [],
   controllers: [],
   providers: [
     JellyfinService,
-    JellyinPlaystateService,
-    JellyfinWebSocketService,
     JellyfinSearchService,
     JellyfinStreamBuilderService,
+    JellyinPlaystateService,
+    JellyfinWebSocketService,
   ],
   exports: [
     JellyfinService,
@@ -27,11 +26,10 @@ export class JellyfinClientModule implements OnModuleInit, OnModuleDestroy {
   constructor(private jellyfinService: JellyfinService) {}
 
   onModuleDestroy() {
-    this.jellyfinService.destroy();
+    this.jellyfinService.disconnectGracefully();
   }
 
   onModuleInit() {
-    this.jellyfinService.init();
-    this.jellyfinService.authenticate();
+    this.jellyfinService.init('0', 'Main');
   }
 }

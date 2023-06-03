@@ -6,11 +6,8 @@ import {
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron } from '@nestjs/schedule';
-import { convertToTracks } from 'src/utils/trackConverter';
-
 import { WebSocket } from 'ws';
 
-import { PlaybackService } from '../../playback/playback.service';
 import {
   PlayNowCommand,
   SessionApiSendPlaystateCommandRequest,
@@ -18,75 +15,96 @@ import {
 
 import { JellyfinSearchService } from './jellyfin.search.service';
 import { JellyfinService } from './jellyfin.service';
+import { GuildJellyfinWebsocket } from 'src/models/jellyfin/GuildJellyfinWebsocket';
+import { PlaybackEnqueueEvent } from 'src/models/playback/PlaybackEnqueueEvent';
 
 @Injectable()
 export class JellyfinWebSocketService implements OnModuleDestroy {
-  private webSocket: WebSocket;
+  private jellyfinSession: { [key: string]: GuildJellyfinWebsocket };
 
   private readonly logger = new Logger(JellyfinWebSocketService.name);
 
   constructor(
     private readonly jellyfinService: JellyfinService,
-    private readonly playbackService: PlaybackService,
     private readonly jellyfinSearchService: JellyfinSearchService,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) {
+    this.jellyfinSession = {};
+  }
+
+  getOrCreateJellyfinSession(guildId: string): GuildJellyfinWebsocket {
+    if (!(guildId in this.jellyfinSession)) {
+      this.jellyfinSession[guildId] = new GuildJellyfinWebsocket();
+      this.jellyfinSession[guildId].id = guildId;
+    }
+    return this.jellyfinSession[guildId];
+  }
 
   @Cron('*/30 * * * * *')
   private handlePeriodicAliveMessage() {
-    if (
-      this.webSocket === undefined ||
-      this.webSocket.readyState !== WebSocket.OPEN
-    ) {
-      return;
-    }
+    for (const [key] of Object.entries(this.jellyfinSession)) {
+      const jellyfin = this.jellyfinSession[key];
+      if (
+        jellyfin.webSocket === undefined ||
+        jellyfin.webSocket.readyState !== WebSocket.OPEN
+      ) {
+        return;
+      }
 
-    this.sendMessage('KeepAlive');
-    this.logger.debug('Sent a KeepAlive package to the server');
+      this.sendMessage(jellyfin.id, 'KeepAlive');
+      this.logger.debug('Sent a KeepAlive package to the server');
+    }
   }
 
-  initializeAndConnect() {
-    const deviceId = this.jellyfinService.getJellyfin().deviceInfo.id;
+  initializeAndConnect(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    const deviceId = this.jellyfinService.getJellyfin(guildId).deviceInfo.id;
     const url = this.buildSocketUrl(
-      this.jellyfinService.getApi().basePath,
-      this.jellyfinService.getApi().accessToken,
+      this.jellyfinService.getApi(guildId).basePath,
+      this.jellyfinService.getApi(guildId).accessToken,
       deviceId,
     );
 
     this.logger.debug(`Opening WebSocket with client id ${deviceId}...`);
 
-    this.webSocket = new WebSocket(url);
-    this.bindWebSocketEvents();
+    jellyfin.webSocket = new WebSocket(url);
+    this.bindWebSocketEvents(guildId);
   }
 
-  disconnect() {
-    if (!this.webSocket) {
+  disconnect(guildId) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    if (!jellyfin.webSocket) {
       this.logger.warn(
-        'Tried to disconnect but WebSocket was unexpectitly undefined',
+        `[${jellyfin.id}] Tried to disconnect but WebSocket was unexpectitly undefined`,
       );
       return;
     }
 
-    this.logger.debug('Closing WebSocket...');
-    this.webSocket.close();
+    this.logger.debug(`[${jellyfin.id}] Closing WebSocket...`);
+    jellyfin.webSocket.close();
   }
 
-  sendMessage(type: string, data?: any) {
-    if (!this.webSocket || this.webSocket.readyState !== WebSocket.OPEN) {
+  sendMessage(guildId: string, type: string, data?: any) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    if (
+      !jellyfin.webSocket ||
+      jellyfin.webSocket.readyState !== WebSocket.OPEN
+    ) {
       throw new Error('Socket not open');
     }
 
     const obj: Record<string, any> = { MessageType: type };
     if (data) obj.Data = data;
 
-    this.webSocket.send(JSON.stringify(obj));
+    jellyfin.webSocket.send(JSON.stringify(obj));
   }
 
-  getReadyState() {
-    return this.webSocket.readyState;
+  getReadyState(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    return jellyfin.webSocket.readyState;
   }
 
-  protected async messageHandler(data: any) {
+  protected async messageHandler(guildId: string, data: any) {
     const msg: JellyMessage<unknown> = JSON.parse(data);
 
     switch (msg.MessageType) {
@@ -104,17 +122,20 @@ export class JellyfinWebSocketService implements OnModuleDestroy {
         this.logger.log(
           `Processing ${ids.length} ids received via websocket and adding them to the queue`,
         );
-        const searchHints = await this.jellyfinSearchService.getAllById(ids);
-        const tracks = await convertToTracks(
-          searchHints,
-          this.jellyfinSearchService,
+
+        const tracks = await this.jellyfinSearchService.getAllById(ids);
+        this.eventEmitter.emit(
+          'playback.command.enqueue',
+          new PlaybackEnqueueEvent(guildId, tracks),
         );
-        this.playbackService.getPlaylistOrDefault().enqueueTracks(tracks);
         break;
       case SessionMessageType[SessionMessageType.Playstate]:
         const sendPlaystateCommandRequest =
           msg.Data as SessionApiSendPlaystateCommandRequest;
-        this.handleSendPlaystateCommandRequest(sendPlaystateCommandRequest);
+        this.handleSendPlaystateCommandRequest(
+          guildId,
+          sendPlaystateCommandRequest,
+        );
         break;
       default:
         this.logger.warn(
@@ -125,23 +146,27 @@ export class JellyfinWebSocketService implements OnModuleDestroy {
   }
 
   private async handleSendPlaystateCommandRequest(
+    guildId: string,
     request: SessionApiSendPlaystateCommandRequest,
   ) {
     switch (request.Command) {
       case PlaystateCommand.PlayPause:
-        this.eventEmitter.emit('internal.voice.controls.togglePause');
+        this.eventEmitter.emit('playback.command.togglePause', guildId);
         break;
       case PlaystateCommand.Pause:
-        this.eventEmitter.emit('internal.voice.controls.pause');
+        this.eventEmitter.emit('playback.command.pause', guildId);
+        break;
+      case PlaystateCommand.Unpause:
+        this.eventEmitter.emit('playback.command.unpause', guildId);
         break;
       case PlaystateCommand.Stop:
-        this.eventEmitter.emit('internal.voice.controls.stop');
+        this.eventEmitter.emit('playback.command.stop', guildId);
         break;
       case PlaystateCommand.NextTrack:
-        this.eventEmitter.emit('internal.audio.track.next');
+        this.eventEmitter.emit('playback.command.next', guildId);
         break;
       case PlaystateCommand.PreviousTrack:
-        this.eventEmitter.emit('internal.audio.track.previous');
+        this.eventEmitter.emit('playback.command.previous', guildId);
         break;
       default:
         this.logger.warn(
@@ -151,8 +176,9 @@ export class JellyfinWebSocketService implements OnModuleDestroy {
     }
   }
 
-  private bindWebSocketEvents() {
-    this.webSocket.on('message', this.messageHandler.bind(this));
+  private bindWebSocketEvents(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    jellyfin.webSocket.on('message', this.messageHandler.bind(this, guildId));
   }
 
   private buildSocketUrl(baseName: string, apiToken: string, device: string) {
@@ -164,7 +190,9 @@ export class JellyfinWebSocketService implements OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    this.disconnect();
+    for (const [key] of Object.entries(this.jellyfinSession)) {
+      this.disconnect(this.jellyfinSession[key].id);
+    }
   }
 }
 

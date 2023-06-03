@@ -1,51 +1,66 @@
 import {
   BaseItemDto,
   BaseItemKind,
-  RemoteImageResult,
-  SearchHint as JellyfinSearchHint,
+  SearchHint as JellySearchHint,
 } from '@jellyfin/sdk/lib/generated-client/models';
 import { getItemsApi } from '@jellyfin/sdk/lib/utils/api/items-api';
 import { getPlaylistsApi } from '@jellyfin/sdk/lib/utils/api/playlists-api';
-import { getRemoteImageApi } from '@jellyfin/sdk/lib/utils/api/remote-image-api';
 import { getSearchApi } from '@jellyfin/sdk/lib/utils/api/search-api';
 
 import { Injectable } from '@nestjs/common';
 import { Logger } from '@nestjs/common/services';
-
-import { AlbumSearchHint } from '../../models/search/AlbumSearchHint';
-import { PlaylistSearchHint } from '../../models/search/PlaylistSearchHint';
-import { SearchHint } from '../../models/search/SearchHint';
+import { GuildJellyfin } from 'src/models/jellyfin/GuildJellyfin';
+import { MediaKind } from 'src/models/search/MediaKind.enum';
+import { SearchHint } from 'src/models/search/SearchHint';
+import { JellyfinTrack } from 'src/models/shared/JellyfinTrack';
+import { Track } from 'src/models/shared/Track';
+import { getEnvironmentVariables } from 'src/utils/environment';
+import { z } from 'zod';
 
 import { JellyfinService } from './jellyfin.service';
 
 @Injectable()
 export class JellyfinSearchService {
   private readonly logger = new Logger(JellyfinSearchService.name);
+  private readonly searchClientId = '0';
 
   constructor(private readonly jellyfinService: JellyfinService) {}
+
+  async getJellyfinService(): Promise<GuildJellyfin> {
+    if (!this.jellyfinService.isConnected(this.searchClientId)) {
+      await this.jellyfinService.init(this.searchClientId, 'Main');
+    }
+    return this.jellyfinService.getOrCreateJellyfinSession(this.searchClientId);
+  }
 
   async searchItem(
     searchTerm: string,
     limit?: number,
-    includeItemTypes: BaseItemKind[] = [
-      BaseItemKind.Audio,
-      BaseItemKind.MusicAlbum,
-      BaseItemKind.Playlist,
+    includedMediaTypes: MediaKind[] = [
+      MediaKind.Audio,
+      MediaKind.AudioAlbum,
+      MediaKind.Playlist,
     ],
   ): Promise<SearchHint[]> {
-    const api = this.jellyfinService.getApi();
+    const jellyfinClient = await this.getJellyfinService();
+    const api = jellyfinClient.api;
     const searchApi = getSearchApi(api);
 
-    if (includeItemTypes.length === 0) {
+    if (includedMediaTypes.length === 0) {
       this.logger.warn(
         'Included item types are empty. This may lead to unwanted results',
       );
     }
 
+    const baseItemKinds: BaseItemKind[] = [];
+    for (const kind of includedMediaTypes) {
+      baseItemKinds.push(this.mediaKind2BaseItemKind(kind));
+    }
+
     try {
       const { data, status } = await searchApi.get({
         searchTerm: searchTerm,
-        includeItemTypes: includeItemTypes,
+        includeItemTypes: baseItemKinds,
         limit: limit,
       });
 
@@ -66,45 +81,184 @@ export class JellyfinSearchService {
         this.transformToSearchHintFromHint(hint),
       ).filter((x) => x !== null) as SearchHint[];
     } catch (err) {
-      this.logger.error(`Failed to search on Jellyfin: ${err}`);
+      this.logger.error(
+        `Unable to retrieve random items from Jellyfin: ${err}`,
+      );
       return [];
     }
   }
 
-  async getPlaylistitems(id: string): Promise<SearchHint[]> {
-    const api = this.jellyfinService.getApi();
-    const searchApi = getPlaylistsApi(api);
+  private transformToSearchHintFromHint(jellyfinHint: JellySearchHint) {
+    switch (jellyfinHint.Type) {
+      case BaseItemKind[BaseItemKind.Audio]:
+        return this.audioHint2SearchHint(jellyfinHint);
+      case BaseItemKind[BaseItemKind.MusicAlbum]:
+        return this.albumHint2SearchHint(jellyfinHint);
+      case BaseItemKind[BaseItemKind.Playlist]:
+        return this.playlistHint2SearchHint(jellyfinHint);
+      default:
+        this.logger.warn(
+          `Received unexpected item type from Jellyfin search: ${jellyfinHint.Type}`,
+        );
+        return undefined;
+    }
+  }
 
-    const axiosResponse = await searchApi.getPlaylistItems({
-      userId: this.jellyfinService.getUserId(),
-      playlistId: id,
+  private audioHint2SearchHint(hint: JellySearchHint): SearchHint {
+    const schema = z.object({
+      Id: z.string(),
+      Name: z.string(),
+      AlbumArtist: z.string(),
+      RunTimeTicks: z.number(),
     });
+    const result = schema.safeParse(hint);
 
-    if (axiosResponse.status !== 200) {
-      this.logger.error(
-        `Jellyfin Search failed with status code ${axiosResponse.status}`,
+    if (!result.success) {
+      throw new Error(
+        `Unable to construct search hint, required properties were undefined: ${JSON.stringify(
+          hint,
+        )}`,
       );
-      return [];
     }
 
-    if (!axiosResponse.data.Items) {
-      this.logger.error(
-        `Jellyfin search returned no items: ${axiosResponse.data}`,
-      );
-      return [];
+    let itemName = result.data.Name;
+    if (result.data.AlbumArtist != '') {
+      itemName = `${result.data.Name} (${result.data.AlbumArtist})`;
     }
 
-    return axiosResponse.data.Items.map((hint) =>
-      SearchHint.constructFromBaseItem(hint),
+    return new SearchHint(
+      result.data.Id,
+      itemName,
+      MediaKind.Audio,
+      result.data.RunTimeTicks / 10000,
     );
   }
 
-  async getAlbumItems(albumId: string): Promise<SearchHint[]> {
-    const api = this.jellyfinService.getApi();
+  private playlistHint2SearchHint(hint: JellySearchHint): SearchHint {
+    if (hint.Id === undefined || !hint.Name || !hint.RunTimeTicks) {
+      throw new Error(
+        'Unable to construct playlist search hint, required properties were undefined',
+      );
+    }
+    return new SearchHint(
+      hint.Id,
+      hint.Name,
+      MediaKind.Playlist,
+      hint.RunTimeTicks / 10000,
+    );
+  }
+
+  private albumHint2SearchHint(hint: JellySearchHint): SearchHint {
+    if (hint.Id === undefined || !hint.Name || !hint.RunTimeTicks) {
+      throw new Error(
+        'Unable to construct playlist search hint, required properties were undefined',
+      );
+    }
+    return new SearchHint(
+      hint.Id,
+      hint.Name,
+      MediaKind.AudioAlbum,
+      hint.RunTimeTicks / 10000,
+    );
+  }
+
+  private mediaKind2BaseItemKind(media: MediaKind): BaseItemKind {
+    switch (media) {
+      case MediaKind.Audio:
+        return BaseItemKind.Audio;
+      case MediaKind.AudioAlbum:
+        return BaseItemKind.MusicAlbum;
+      case MediaKind.Playlist:
+        return BaseItemKind.Playlist;
+      default:
+        return BaseItemKind.Audio;
+    }
+  }
+
+  async getTracksById(
+    id: string,
+    includedMediaTypes: MediaKind[],
+  ): Promise<Track[]> {
+    const jellyfinClient = await this.getJellyfinService();
+    const api = jellyfinClient.api;
+    const searchApi = getItemsApi(api);
+
+    const baseItemKinds: BaseItemKind[] = [];
+    for (const kind of includedMediaTypes) {
+      baseItemKinds.push(this.mediaKind2BaseItemKind(kind));
+    }
+
+    const { data } = await searchApi.getItems({
+      ids: [id],
+      userId: this.jellyfinService.getUserId(this.searchClientId),
+      includeItemTypes: baseItemKinds,
+    });
+
+    if (!data.Items || data.Items.length !== 1) {
+      this.logger.warn(`Failed to retrieve item via id '${id}'`);
+      return [];
+    }
+
+    return await this.transformToTracksFromBaseItemDto(data.Items[0]);
+  }
+
+  private async transformToTracksFromBaseItemDto(
+    baseItemDto: BaseItemDto,
+  ): Promise<Track[]> {
+    switch (baseItemDto.Type) {
+      case BaseItemKind[BaseItemKind.Audio]:
+        return await this.audio2Tracks(baseItemDto);
+      case BaseItemKind[BaseItemKind.MusicAlbum]:
+        return await this.album2Tracks(baseItemDto);
+      case BaseItemKind[BaseItemKind.Playlist]:
+        return await this.playlist2Tracks(baseItemDto);
+      default:
+        this.logger.warn(
+          `Received unexpected item type from Jellyfin search: ${baseItemDto.Type}`,
+        );
+        return [];
+    }
+  }
+
+  private async audio2Tracks(baseItemDto: BaseItemDto): Promise<Track[]> {
+    if (
+      baseItemDto.Id === undefined ||
+      !baseItemDto.Name ||
+      !baseItemDto.RunTimeTicks
+    ) {
+      throw new Error(
+        'Unable to construct search hint from base item, required properties were undefined',
+      );
+    }
+
+    return [
+      new JellyfinTrack(
+        baseItemDto.Id,
+        baseItemDto.Name,
+        baseItemDto.Album ? baseItemDto.Album : '',
+        baseItemDto.Artists ? baseItemDto.Artists.join(',') : '',
+        baseItemDto.RunTimeTicks / 10000,
+        this.buildImageURL(baseItemDto.Id),
+      ),
+    ];
+  }
+
+  private buildImageURL(id: string): string {
+    getEnvironmentVariables().JELLYFIN_SERVER_ADDRESS;
+    if (!getEnvironmentVariables().JELLYFIN_INTERNAL_IMAGE_ENABLED) {
+      return '';
+    }
+    const baseURL = getEnvironmentVariables().JELLYFIN_SERVER_ADDRESS;
+    return `${baseURL}/Items/${id}/Images/Primary`;
+  }
+
+  private async album2Tracks(baseItemDto: BaseItemDto): Promise<Track[]> {
+    const jellyfinClient = await this.getJellyfinService();
+    const api = jellyfinClient.api;
     const searchApi = getSearchApi(api);
     const axiosResponse = await searchApi.get({
-      parentId: albumId,
-      userId: this.jellyfinService.getUserId(),
+      parentId: baseItemDto.Id,
+      userId: this.jellyfinService.getUserId(this.searchClientId),
       mediaTypes: [BaseItemKind[BaseItemKind.Audio]],
       searchTerm: '%',
     });
@@ -123,42 +277,64 @@ export class JellyfinSearchService {
       return [];
     }
 
-    return [...axiosResponse.data.SearchHints]
-      .reverse()
-      .map((hint) => SearchHint.constructFromHint(hint));
+    return [...axiosResponse.data.SearchHints].reverse().map((hint) => {
+      return new JellyfinTrack(
+        hint.Id ? hint.Id : '',
+        hint.Name ? hint.Name : '',
+        hint.Album ? hint.Album : '',
+        hint.Artists ? hint.Artists.join(',') : '',
+        (hint.RunTimeTicks ? hint.RunTimeTicks : 0) / 10000,
+        this.buildImageURL(hint.Id ? hint.Id : ''),
+      );
+    });
   }
 
-  async getById(
-    id: string,
-    includeItemTypes: BaseItemKind[],
-  ): Promise<SearchHint | undefined> {
-    const api = this.jellyfinService.getApi();
-
-    const searchApi = getItemsApi(api);
-    const { data } = await searchApi.getItems({
-      ids: [id],
-      userId: this.jellyfinService.getUserId(),
-      includeItemTypes: includeItemTypes,
+  private async playlist2Tracks(baseItemDto: BaseItemDto): Promise<Track[]> {
+    const jellyfinClient = await this.getJellyfinService();
+    const api = jellyfinClient.api;
+    const searchApi = getPlaylistsApi(api);
+    const axiosResponse = await searchApi.getPlaylistItems({
+      userId: this.jellyfinService.getUserId(this.searchClientId),
+      playlistId: baseItemDto.Id ? baseItemDto.Id : '',
     });
 
-    if (!data.Items || data.Items.length !== 1) {
-      this.logger.warn(`Failed to retrieve item via id '${id}'`);
-      return undefined;
+    if (axiosResponse.status !== 200) {
+      this.logger.error(
+        `Jellyfin Search failed with status code ${axiosResponse.status}`,
+      );
+      return [];
     }
 
-    return this.transformToSearchHintFromBaseItemDto(data.Items[0]);
+    if (!axiosResponse.data.Items) {
+      this.logger.error(
+        `Jellyfin search returned no items: ${axiosResponse.data}`,
+      );
+      return [];
+    }
+
+    return axiosResponse.data.Items.map((hint) => {
+      return new JellyfinTrack(
+        hint.Id ? hint.Id : '',
+        hint.Name ? hint.Name : '',
+        hint.Album ? hint.Album : '',
+        hint.Artists ? hint.Artists.join(',') : '',
+        (hint.RunTimeTicks ? hint.RunTimeTicks : 0) / 10000,
+        this.buildImageURL(hint.Id ? hint.Id : ''),
+      );
+    });
   }
 
   async getAllById(
     ids: string[],
     includeItemTypes: BaseItemKind[] = [BaseItemKind.Audio],
-  ): Promise<SearchHint[]> {
-    const api = this.jellyfinService.getApi();
+  ): Promise<Track[]> {
+    const jellyfinClient = await this.getJellyfinService();
+    const api = jellyfinClient.api;
 
     const searchApi = getItemsApi(api);
     const { data } = await searchApi.getItems({
       ids: ids,
-      userId: this.jellyfinService.getUserId(),
+      userId: this.jellyfinService.getUserId(this.searchClientId),
       includeItemTypes: includeItemTypes,
     });
 
@@ -167,53 +343,17 @@ export class JellyfinSearchService {
       return [];
     }
 
-    return data.Items.map((item) =>
-      this.transformToSearchHintFromBaseItemDto(item),
-    ).filter((searchHint) => searchHint !== undefined) as SearchHint[];
-  }
-
-  async getRemoteImageById(id: string, limit = 20): Promise<RemoteImageResult> {
-    const api = this.jellyfinService.getApi();
-    const remoteImageApi = getRemoteImageApi(api);
-
-    this.logger.verbose(
-      `Searching for remote images of item '${id}' with limit of ${limit}`,
-    );
-
-    try {
-      const axiosReponse = await remoteImageApi.getRemoteImages({
-        itemId: id,
-        includeAllLanguages: true,
-        limit: limit,
-      });
-
-      if (axiosReponse.status !== 200) {
-        this.logger.warn(
-          `Failed to retrieve remote images. Response has status ${axiosReponse.status}`,
-        );
-        return {
-          Images: [],
-          Providers: [],
-          TotalRecordCount: 0,
-        };
-      }
-
-      this.logger.verbose(
-        `Retrieved ${axiosReponse.data.TotalRecordCount} remote images from Jellyfin`,
-      );
-      return axiosReponse.data;
-    } catch (err) {
-      this.logger.error(`Failed to retrieve remote images: ${err}`);
-      return {
-        Images: [],
-        Providers: [],
-        TotalRecordCount: 0,
-      };
+    const result: Track[] = [];
+    for (const item of data.Items) {
+      const track = await this.audio2Tracks(item);
+      result.push(track[0]);
     }
+    return result;
   }
 
-  async getRandomTracks(limit: number) {
-    const api = this.jellyfinService.getApi();
+  async getRandomTracks(limit: number): Promise<Track[]> {
+    const jellyfinClient = await this.getJellyfinService();
+    const api = jellyfinClient.api;
     const searchApi = getItemsApi(api);
 
     try {
@@ -221,7 +361,7 @@ export class JellyfinSearchService {
         includeItemTypes: [BaseItemKind.Audio],
         limit: limit,
         sortBy: ['random'],
-        userId: this.jellyfinService.getUserId(),
+        userId: this.jellyfinService.getUserId(this.searchClientId),
         recursive: true,
       });
 
@@ -232,46 +372,17 @@ export class JellyfinSearchService {
         return [];
       }
 
-      return response.data.Items.map((item) => {
-        return SearchHint.constructFromBaseItem(item);
-      });
+      const result: Track[] = [];
+      for (const item of response.data.Items) {
+        const track = await this.audio2Tracks(item);
+        result.push(track[0]);
+      }
+      return result;
     } catch (err) {
       this.logger.error(
         `Unable to retrieve random items from Jellyfin: ${err}`,
       );
       return [];
-    }
-  }
-
-  private transformToSearchHintFromHint(jellyifnHint: JellyfinSearchHint) {
-    switch (jellyifnHint.Type) {
-      case BaseItemKind[BaseItemKind.Audio]:
-        return SearchHint.constructFromHint(jellyifnHint);
-      case BaseItemKind[BaseItemKind.MusicAlbum]:
-        return AlbumSearchHint.constructFromHint(jellyifnHint);
-      case BaseItemKind[BaseItemKind.Playlist]:
-        return PlaylistSearchHint.constructFromHint(jellyifnHint);
-      default:
-        this.logger.warn(
-          `Received unexpected item type from Jellyfin search: ${jellyifnHint.Type}`,
-        );
-        return undefined;
-    }
-  }
-
-  private transformToSearchHintFromBaseItemDto(baseItemDto: BaseItemDto) {
-    switch (baseItemDto.Type) {
-      case BaseItemKind[BaseItemKind.Audio]:
-        return SearchHint.constructFromBaseItem(baseItemDto);
-      case BaseItemKind[BaseItemKind.MusicAlbum]:
-        return AlbumSearchHint.constructFromBaseItem(baseItemDto);
-      case BaseItemKind[BaseItemKind.Playlist]:
-        return PlaylistSearchHint.constructFromBaseItem(baseItemDto);
-      default:
-        this.logger.warn(
-          `Received unexpected item type from Jellyfin search: ${baseItemDto.Type}`,
-        );
-        return undefined;
     }
   }
 }

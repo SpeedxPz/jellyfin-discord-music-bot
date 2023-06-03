@@ -1,6 +1,4 @@
 import { Api } from '@jellyfin/sdk';
-import { PlaystateApi } from '@jellyfin/sdk/lib/generated-client/api/playstate-api';
-import { SessionApi } from '@jellyfin/sdk/lib/generated-client/api/session-api';
 import {
   BaseItemKind,
   GeneralCommandType,
@@ -10,32 +8,45 @@ import { getSessionApi } from '@jellyfin/sdk/lib/utils/api/session-api';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
-import { Interval } from '@nestjs/schedule';
-import { Track } from '../../models/shared/Track';
-
-import { PlaybackService } from '../../playback/playback.service';
+import { DiscordPlayEvent } from 'src/models/discord/DiscordPlayEvent';
+import { DiscordProgressEvent } from 'src/models/discord/DiscordProgressEvent';
+import { GuildJellyfinPlayState } from 'src/models/jellyfin/GuildJellyfinPlayState';
+import { JellyfinTrack } from 'src/models/shared/JellyfinTrack';
 
 @Injectable()
 export class JellyinPlaystateService {
-  private playstateApi: PlaystateApi;
-  private sessionApi: SessionApi;
-
-  constructor(private readonly playbackService: PlaybackService) {}
-
   private readonly logger = new Logger(JellyinPlaystateService.name);
+  private jellyfinSession: { [key: string]: GuildJellyfinPlayState };
 
-  async initializePlayState(api: Api) {
-    this.initializeApis(api);
-    await this.reportCapabilities();
+  constructor() {
+    this.jellyfinSession = {};
   }
 
-  private async initializeApis(api: Api) {
-    this.sessionApi = getSessionApi(api);
-    this.playstateApi = getPlaystateApi(api);
+  getOrCreateJellyfinSession(guildId: string): GuildJellyfinPlayState {
+    if (!(guildId in this.jellyfinSession)) {
+      this.jellyfinSession[guildId] = new GuildJellyfinPlayState();
+      this.jellyfinSession[guildId].id = guildId;
+    }
+    return this.jellyfinSession[guildId];
   }
 
-  private async reportCapabilities() {
-    await this.sessionApi.postCapabilities({
+  async initializePlayState(guildId: string, api: Api) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    jellyfin.playstateApi = getPlaystateApi(api);
+    jellyfin.sessionApi = getSessionApi(api);
+    await this.reportCapabilities(guildId);
+    jellyfin.initialized = true;
+  }
+
+  async destroy(guildId: string) {
+    if (guildId in this.jellyfinSession) {
+      delete this.jellyfinSession[guildId];
+    }
+  }
+
+  private async reportCapabilities(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    await jellyfin.sessionApi.postCapabilities({
       playableMediaTypes: [BaseItemKind[BaseItemKind.Audio]],
       supportsMediaControl: true,
       supportedCommands: [
@@ -44,74 +55,124 @@ export class JellyinPlaystateService {
       ],
     });
 
-    this.logger.debug('Reported playback capabilities sucessfully');
+    this.logger.debug(
+      `[${jellyfin.id}] Reported playback capabilities sucessfully`,
+    );
   }
 
-  @OnEvent('internal.audio.track.announce')
-  private async onPlaybackNewTrack(track: Track) {
-    this.logger.debug(`Reporting playback start on track '${track.id}'`);
-    await this.playstateApi.reportPlaybackStart({
-      playbackStartInfo: {
-        ItemId: track.id,
-        PositionTicks: 0,
-      },
-    });
-  }
-
-  @OnEvent('internal.audio.track.finish')
-  private async onPlaybackFinished(track: Track) {
-    if (!track) {
-      this.logger.error(
-        'Unable to report playback because finished track was undefined',
+  @OnEvent('discord.audioplayer.event.play.started')
+  private async onPlaybackNewTrack(event: DiscordPlayEvent) {
+    const jellyfin = this.getOrCreateJellyfinSession(event.guild_id);
+    if (!jellyfin.initialized) return;
+    if (event.track instanceof JellyfinTrack) {
+      this.logger.debug(
+        `Reporting playback start on track '${event.track.id}'`,
       );
-      return;
+      jellyfin.track = event.track;
+      try {
+        await jellyfin.playstateApi.reportPlaybackStart({
+          playbackStartInfo: {
+            ItemId: event.track.id,
+            PositionTicks: 0,
+          },
+        });
+      } catch {}
     }
-    this.logger.debug(`Reporting playback finish on track '${track.id}'`);
-    await this.playstateApi.reportPlaybackStopped({
-      playbackStopInfo: {
-        ItemId: track.id,
-        PositionTicks: track.playbackProgress * 10000,
-      },
-    });
   }
 
-  @OnEvent('playback.state.pause')
-  private async onPlaybackPause(paused: boolean) {
-    const track = this.playbackService.getPlaylistOrDefault().getActiveTrack();
+  @OnEvent('discord.audioplayer.event.play.stopped')
+  private async onPlaybackFinished(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    if (!jellyfin.initialized) return;
+    this.logger.debug(
+      `Reporting playback finish on track '${jellyfin.track.id}'`,
+    );
+    try {
+      await jellyfin.playstateApi.reportPlaybackStopped({
+        playbackStopInfo: {
+          ItemId: jellyfin.track.id,
+          PositionTicks: jellyfin.progress * 10000,
+        },
+      });
+    } catch {}
+  }
 
-    if (!track) {
+  @OnEvent('discord.audioplayer.event.paused')
+  private async onPlaybackPause(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    if (!jellyfin.initialized) return;
+    if (!jellyfin.track) {
       this.logger.error(
         'Unable to report changed playstate to Jellyfin because no track was active',
       );
       return;
     }
 
-    this.playstateApi.reportPlaybackProgress({
-      playbackProgressInfo: {
-        IsPaused: paused,
-        ItemId: track.id,
-        PositionTicks: track.playbackProgress * 10000,
-      },
-    });
+    try {
+      jellyfin.isPause = true;
+      await jellyfin.playstateApi.reportPlaybackProgress({
+        playbackProgressInfo: {
+          IsPaused: true,
+          ItemId: jellyfin.track.id,
+          PositionTicks: jellyfin.progress * 10000,
+        },
+      });
+    } catch {}
   }
 
-  @Interval(1000)
-  private async onPlaybackProgress() {
-    const track = this.playbackService.getPlaylistOrDefault().getActiveTrack();
-
-    if (!track) {
+  @OnEvent('discord.audioplayer.event.resume')
+  private async onPlaybackResume(guildId: string) {
+    const jellyfin = this.getOrCreateJellyfinSession(guildId);
+    if (!jellyfin.initialized) return;
+    if (!jellyfin.track) {
+      this.logger.error(
+        'Unable to report changed playstate to Jellyfin because no track was active',
+      );
       return;
     }
 
-    await this.playstateApi.reportPlaybackProgress({
-      playbackProgressInfo: {
-        ItemId: track.id,
-        PositionTicks: track.playbackProgress * 10000,
-      },
-    });
+    try {
+      jellyfin.isPause = false;
+      await jellyfin.playstateApi.reportPlaybackProgress({
+        playbackProgressInfo: {
+          IsPaused: false,
+          ItemId: jellyfin.track.id,
+          PositionTicks: jellyfin.progress * 10000,
+        },
+      });
+    } catch {}
+  }
 
-    this.logger.verbose(
-      `Reported playback progress ${track.playbackProgress} to Jellyfin for item ${track.id}`,
-    );
+  @OnEvent('discord.audioplayer.event.play.progress')
+  handleOnDiscordAudioProgress(event: DiscordProgressEvent) {
+    const jellyfin = this.getOrCreateJellyfinSession(event.guildId);
+    if (!jellyfin.initialized) return;
+
+    // Update only every 5 seconds.
+    const currentDateTime = new Date();
+    if (
+      currentDateTime > jellyfin.nextUpdate ||
+      jellyfin.nextUpdate === undefined
+    ) {
+      currentDateTime.setSeconds(currentDateTime.getSeconds() + 5);
+      jellyfin.nextUpdate = currentDateTime;
+
+      jellyfin.progress = event.progress;
+
+      try {
+        jellyfin.playstateApi.reportPlaybackProgress(
+          {
+            playbackProgressInfo: {
+              IsPaused: jellyfin.isPause,
+              ItemId: jellyfin.track.id,
+              PositionTicks: jellyfin.progress * 10000,
+            },
+          },
+          {
+            timeout: 5000,
+          },
+        );
+      } catch {}
+    }
   }
 }

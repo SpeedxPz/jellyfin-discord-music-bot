@@ -1,0 +1,47 @@
+import { Command, Handler, IA } from '@discord-nestjs/core';
+
+import { Injectable } from '@nestjs/common';
+
+import { CommandInteraction } from 'discord.js';
+import { DiscordMessageService } from 'src/clients/discord/discord.message.service';
+
+import { defaultMemberPermissions } from 'src/utils/environment';
+
+@Injectable()
+@Command({
+  name: 'help',
+  description: 'Get help if you&apos;re having problems with this bot',
+  defaultMemberPermissions: defaultMemberPermissions,
+})
+export class HelpCommand {
+  constructor(private readonly discordMessageService: DiscordMessageService) {}
+
+  @Handler()
+  async handler(@IA() interaction: CommandInteraction): Promise<void> {
+    await interaction.reply({
+      embeds: [
+        this.discordMessageService.buildMessage({
+          title: 'Jellyfin Discord Bot',
+          description:
+            'Jellyfin Discord Bot is an open source and self-hosted Discord bot, that integrates with your Jellyfin Media server and enables you to playback music from your libraries. You can use the Discord Slash Commands to invoke bot commands.',
+          authorUrl: 'https://github.com/SpeedxPz/jellyfin-discord-music-bot',
+          mixin(embedBuilder) {
+            return embedBuilder.addFields([
+              {
+                name: 'Report an issue',
+                value:
+                  'https://github.com/SpeedxPz/jellyfin-discord-music-bot/issues/new/choose',
+                inline: true,
+              },
+              {
+                name: 'Source code',
+                value: 'https://github.com/SpeedxPz/jellyfin-discord-music-bot',
+                inline: true,
+              },
+            ]);
+          },
+        }),
+      ],
+    });
+  }
+}
