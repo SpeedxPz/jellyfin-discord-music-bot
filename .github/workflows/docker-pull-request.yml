@@ -1,0 +1,13 @@
+name: Build Image
+on:
+  pull_request:
+  pull_request_review:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag takumiproducer/takumi-music-discord-bot:$(date +%s)
