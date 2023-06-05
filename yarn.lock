@@ -4361,9 +4361,9 @@ ts-jest@29.1.0:
     semver "7.x"
     yargs-parser "^21.0.1"
 
-ts-loader@^9.2.3:
-  version "9.4.2"
-  resolved "https://registry.npmjs.org/ts-loader/-/ts-loader-9.4.2.tgz"
+ts-loader@^9.4.3:
+  version "9.4.3"
+  resolved "https://registry.yarnpkg.com/ts-loader/-/ts-loader-9.4.3.tgz#55cfa7c28dd82a2de968ae45c3adb75fb888b27e"
   dependencies:
     chalk "^4.1.0"
     enhanced-resolve "^5.0.0"
