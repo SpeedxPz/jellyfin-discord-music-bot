@@ -8,7 +8,7 @@ RUN npm run build
 
 
 FROM node:16.13.1-alpine3.12
-RUN apk add ffmpeg
+RUN apk add ffmpeg python3
 
 COPY --from=builder /usr/src/app/ /usr/src/app/
 WORKDIR /usr/src/app/
