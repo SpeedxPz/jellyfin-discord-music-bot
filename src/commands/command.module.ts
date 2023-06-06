@@ -1,5 +1,5 @@
 import { DiscordModule } from '@discord-nestjs/core';
-import { Module } from '@nestjs/common';
+import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { JellyfinClientModule } from 'src/clients/jellyfin/jellyfin.module';
 import { PlaybackModule } from 'src/playback/playback.module';
 import { DiscordClientModule } from '../clients/discord/discord.module';
@@ -18,33 +18,51 @@ import { SummonCommand } from './summon/summon.command';
 import { RemoveTrackCommand } from './remove/remove.command';
 import { HelpCommand } from './help/help.command';
 import { PlayingCommand } from './playing/playing.command';
+import { YoutubeClientModule } from 'src/clients/youtube/youtube.module';
+import { PlayYoutubeItemCommand } from './playyt/playyt.commands';
+import { getEnvironmentVariables } from 'src/utils/environment';
 
-@Module({
-  imports: [
-    DiscordModule.forFeature(),
-    PlaybackModule,
-    DiscordClientModule,
-    PlaybackModule,
-    JellyfinClientModule,
-  ],
-  controllers: [],
-  providers: [
-    SummonCommand,
-    DisconnectCommand,
-    PlayItemCommand,
-    NextTrackCommand,
-    PreviousTrackCommand,
-    PausePlaybackCommand,
-    StopPlaybackCommand,
-    QueueInteractionCollector,
-    QueueCommand,
-    GoTrackCommand,
-    EnqueueRandomItemsCommand,
-    StatusCommand,
-    RemoveTrackCommand,
-    HelpCommand,
-    PlayingCommand,
-  ],
-  exports: [],
-})
-export class CommandModule {}
+@Module({})
+export class CommandModule {
+  static register(): DynamicModule {
+    let commands: Provider[] = [
+      SummonCommand,
+      DisconnectCommand,
+      NextTrackCommand,
+      PreviousTrackCommand,
+      PausePlaybackCommand,
+      StopPlaybackCommand,
+      QueueInteractionCollector,
+      QueueCommand,
+      GoTrackCommand,
+      StatusCommand,
+      RemoveTrackCommand,
+      HelpCommand,
+      PlayingCommand,
+    ];
+    const jellyfinCommand = [PlayItemCommand, EnqueueRandomItemsCommand];
+    const youtubeCommand = [PlayYoutubeItemCommand];
+
+    if (getEnvironmentVariables().JELLYFIN_ENABLED) {
+      commands = [...commands, ...jellyfinCommand];
+    }
+
+    if (getEnvironmentVariables().YOUTUBE_ENABLED) {
+      commands = [...commands, ...youtubeCommand];
+    }
+
+    return {
+      module: CommandModule,
+      imports: [
+        DiscordModule.forFeature(),
+        PlaybackModule,
+        DiscordClientModule,
+        PlaybackModule,
+        JellyfinClientModule,
+        YoutubeClientModule,
+      ],
+      providers: commands,
+      exports: [],
+    };
+  }
+}

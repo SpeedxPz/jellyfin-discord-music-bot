@@ -12,7 +12,10 @@ import {
 } from 'discord.js';
 import { PlayingTempCommandData } from './playing.types';
 import { lightFormat } from 'date-fns';
-import { trimStringToFixedLength } from 'src/utils/stringUtils/stringUtils';
+import {
+  emptyOrDash,
+  trimStringToFixedLength,
+} from 'src/utils/stringUtils/stringUtils';
 import { DefaultJellyfinColor } from 'src/types/colors';
 import { Interval } from '@nestjs/schedule';
 
@@ -89,12 +92,12 @@ export class PlayingCommand {
       .setFields(
         {
           name: 'Album',
-          value: trimStringToFixedLength(track.album, 50),
+          value: emptyOrDash(trimStringToFixedLength(track.album, 50)),
           inline: false,
         },
         {
           name: 'Artist',
-          value: trimStringToFixedLength(track.artist, 50),
+          value: emptyOrDash(trimStringToFixedLength(track.artist, 50)),
           inline: false,
         },
         {

@@ -182,6 +182,10 @@ export class PlayItemCommand {
       return;
     }
 
+    if (interaction.commandName != 'play') {
+      return;
+    }
+
     const focusedAutoCompleteAction = interaction.options.getFocused(true);
     const typeIndex = interaction.options.getInteger('type');
     const type =

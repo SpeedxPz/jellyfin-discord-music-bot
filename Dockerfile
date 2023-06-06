@@ -12,7 +12,7 @@ RUN apk add ffmpeg
 
 COPY --from=builder /usr/src/app/ /usr/src/app/
 WORKDIR /usr/src/app/
-
+RUN chmod a+rx /usr/src/app/bin/yt-dlp
 EXPOSE 3000
 
 CMD ["yarn", "start:prod"]

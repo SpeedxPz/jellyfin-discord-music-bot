@@ -12,6 +12,8 @@ import { NoNextTrackToPlay } from './exception/no-next-track-to-play.exception';
 import { NoPreviousTrackToPlay } from './exception/no-prev-track-to-play.exception';
 import { JellyfinWebSocketService } from 'src/clients/jellyfin/jellyfin.websocket.service';
 import { PlaybackEnqueueEvent } from 'src/models/playback/PlaybackEnqueueEvent';
+import { YoutubeTrack } from 'src/models/shared/YoutubeTrack';
+import { getEnvironmentVariables } from 'src/utils/environment';
 
 @Injectable()
 export class PlaybackService {
@@ -35,8 +37,10 @@ export class PlaybackService {
   }
 
   async init(guildId: string, guildName: string) {
-    await this.jellyfinService.init(guildId, guildName);
-    await this.jellyfinWebsocketService.initializeAndConnect(guildId);
+    if (getEnvironmentVariables().JELLYFIN_ENABLED) {
+      await this.jellyfinService.init(guildId, guildName);
+      await this.jellyfinWebsocketService.initializeAndConnect(guildId);
+    }
   }
 
   async disconnect(guildId: string) {
@@ -44,8 +48,10 @@ export class PlaybackService {
     instance.playing = false;
     instance.pause = false;
     instance.queue.clear();
-    await this.jellyfinService.disconnect(guildId);
-    await this.jellyfinWebsocketService.disconnect(guildId);
+    if (getEnvironmentVariables().JELLYFIN_ENABLED) {
+      await this.jellyfinService.disconnect(guildId);
+      await this.jellyfinWebsocketService.disconnect(guildId);
+    }
   }
 
   async sleep(ms) {
@@ -143,6 +149,8 @@ export class PlaybackService {
         track.id,
         160000,
       );
+    } else if (track instanceof YoutubeTrack) {
+      return `./cache/yt_${track.id}.mp3`;
     } else {
       return '';
     }

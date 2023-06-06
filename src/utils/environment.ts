@@ -7,13 +7,21 @@ env.config();
 
 export const environmentVariablesSchema = z.object({
   DISCORD_CLIENT_TOKEN: z.string(),
-  JELLYFIN_SERVER_ADDRESS: z.string().url(),
+  JELLYFIN_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
+  YOUTUBE_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
+  JELLYFIN_SERVER_ADDRESS: z.string().default(''),
   JELLYFIN_INTERNAL_IMAGE_ENABLED: z
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
-  JELLYFIN_AUTHENTICATION_USERNAME: z.string(),
-  JELLYFIN_AUTHENTICATION_PASSWORD: z.string(),
+  JELLYFIN_AUTHENTICATION_USERNAME: z.string().default(''),
+  JELLYFIN_AUTHENTICATION_PASSWORD: z.string().default(''),
   UPDATER_DISABLE_NOTIFICATIONS: z
     .enum(['true', 'false'])
     .default('false')
@@ -29,6 +37,7 @@ export const environmentVariablesSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
+  YOUTUBE_SEARCH_API_KEY: z.string().default(''),
 });
 
 export const getEnvironmentVariables = () => {
