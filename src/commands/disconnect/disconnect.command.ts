@@ -37,7 +37,7 @@ export class DisconnectCommand {
     } catch (e) {
       await interaction.editReply({
         embeds: [
-          this.discordMessageService.buildErrorMessage({
+          this.discordMessageService.buildMessage({
             title: 'Unable to disconnect from voice channel',
             description: 'I am currently not connected to any voice channels',
           }),

@@ -16,7 +16,7 @@ import {
   emptyOrDash,
   trimStringToFixedLength,
 } from 'src/utils/stringUtils/stringUtils';
-import { DefaultJellyfinColor } from 'src/types/colors';
+import { DefaultJellyfinColor, InactiveColor } from 'src/types/colors';
 import { Interval } from '@nestjs/schedule';
 
 @Injectable()
@@ -38,7 +38,7 @@ export class PlayingCommand {
   async handler(@IA() interaction: CommandInteraction): Promise<void> {
     const guild = interaction.guild as Guild;
     await interaction.reply(
-      this.getReplyForPlaying(guild.id) as InteractionReplyOptions,
+      this.getReplyForPlaying(guild.id, true) as InteractionReplyOptions,
     );
 
     this.data.set(interaction.id, {
@@ -51,6 +51,7 @@ export class PlayingCommand {
       this.logger.log(
         `Remove interval update from '${interaction.id}' because the event collector has reachted the timeout`,
       );
+      await interaction.editReply(this.getReplyForPlaying(guild.id, false));
       this.data.delete(interaction.id);
     }, 5 * 60 * 1000);
   }
@@ -66,12 +67,15 @@ export class PlayingCommand {
     this.data.forEach(async (value) => {
       const guild = value.interaction.guild as Guild;
 
-      await value.interaction.editReply(this.getReplyForPlaying(guild.id));
+      await value.interaction.editReply(
+        this.getReplyForPlaying(guild.id, true),
+      );
     });
   }
 
   public getReplyForPlaying(
     guildId: string,
+    isActive = true,
   ): InteractionReplyOptions | InteractionUpdateOptions {
     const track = this.playbackService.getCurrentTrack(guildId);
     if (!this.playbackService.isPlaying || !track) {
@@ -79,7 +83,7 @@ export class PlayingCommand {
         embeds: [
           this.discordMessageService.buildMessage({
             title: 'There is nothing playing right now',
-            description: 'Use the ``/play`` command to start play something',
+            description: 'Start play something to display this',
           }),
         ],
         ephemeral: false,
@@ -114,7 +118,7 @@ export class PlayingCommand {
           inline: true,
         },
       )
-      .setColor(DefaultJellyfinColor);
+      .setColor(isActive ? DefaultJellyfinColor : InactiveColor);
 
     if (track.imageURL) {
       return {

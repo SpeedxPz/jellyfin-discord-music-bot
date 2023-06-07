@@ -27,7 +27,12 @@ import {
   defaultMemberPermissions,
   getEnvironmentVariables,
 } from 'src/utils/environment';
-import { PlayYoutubeCommandParams, Position } from './playyt.params';
+import {
+  Mode,
+  PlayYoutubeCommandParams,
+  Position,
+  SearchType,
+} from './playyt.params';
 import { trimStringToFixedLength } from 'src/utils/stringUtils/stringUtils';
 import { YoutubeSearchService } from 'src/clients/youtube/youtube.search.service';
 import { lightFormat } from 'date-fns';
@@ -35,11 +40,16 @@ import { Track } from 'src/models/shared/Track';
 import { NotInVoiceException } from 'src/clients/discord/exception/not-in-voice.exception';
 import { DefaultJellyfinColor } from 'src/types/colors';
 import { YoutubeTrack } from 'src/models/shared/YoutubeTrack';
+import {
+  InvalidYoutubeLink,
+  InvalidYoutubePlaylistLink,
+} from 'src/clients/youtube/exception/invalid.youtube.link.exception';
+import { formatMillisecondsAsHumanReadable } from 'src/utils/timeUtils';
 
 @Injectable()
 @Command({
   name: 'playyt',
-  description: 'Search for an item on youtube',
+  description: 'Search for an item on youtube or paste the link to start play',
   defaultMemberPermissions: defaultMemberPermissions,
 })
 export class PlayYoutubeItemCommand {
@@ -69,10 +79,78 @@ export class PlayYoutubeItemCommand {
       );
     } else if (dto.name.startsWith('https://')) {
       try {
-        const id = this.youtubeSearchService.youtubeURLToId(dto.name);
-        tracks = await this.youtubeSearchService.getTracksById(id);
-      } catch {
-        tracks = [];
+        switch (dto.type) {
+          case SearchType.Playlist:
+            const playlistId = this.youtubeSearchService.youtubeURLtoPlaylistId(
+              dto.name,
+            );
+            await interaction.editReply({
+              embeds: [
+                this.discordMessageService.buildMessage({
+                  title: 'Loading youtube playlist...',
+                }),
+              ],
+            });
+            let nextUpdate = new Date();
+            tracks = await this.youtubeSearchService.getTracksByPlaylistId(
+              playlistId,
+              (length, duration) => {
+                const currentDateTime = new Date();
+                if (currentDateTime >= nextUpdate) {
+                  currentDateTime.setSeconds(currentDateTime.getSeconds() + 1);
+                  nextUpdate = currentDateTime;
+                  interaction.editReply({
+                    embeds: [
+                      this.discordMessageService.buildMessage({
+                        title: 'Loading youtube playlist...',
+                        description: `Loading ${length} songs with total duration of (${formatMillisecondsAsHumanReadable(
+                          duration,
+                        )})`,
+                      }),
+                    ],
+                  });
+                }
+              },
+            );
+            break;
+          case SearchType.Audio:
+          default:
+            const id = this.youtubeSearchService.youtubeURLToId(dto.name);
+            tracks = await this.youtubeSearchService.getTracksById(id);
+        }
+      } catch (e) {
+        if (e instanceof InvalidYoutubeLink) {
+          await interaction.editReply({
+            embeds: [
+              this.discordMessageService.buildMessage({
+                title: 'Invalid youtube video link',
+                description:
+                  '- Check for your link\n- If link is youtube playlist please specific ``Type`` to Playlist\n- Should be formatted like this ``https://www.youtube.com/watch?v=xxxxxxx``',
+              }),
+            ],
+          });
+        } else if (e instanceof InvalidYoutubePlaylistLink) {
+          await interaction.editReply({
+            embeds: [
+              this.discordMessageService.buildMessage({
+                title: 'Invalid youtube playlist link',
+                description:
+                  '- Check for your link\n- Should be formatted like this ``https://www.youtube.com/playlist?list=xxxxx``\n- Or this or ``https://www.youtube.com/watch?v=xxxxxx&list=xxxxxxx``',
+              }),
+            ],
+          });
+        } else {
+          this.logger.error(e);
+          await interaction.editReply({
+            embeds: [
+              this.discordMessageService.buildErrorMessage({
+                title: 'Something went wrong with Youtube Engine',
+                description: '- Please report this error to bot author',
+              }),
+            ],
+          });
+        }
+        return;
       }
     } else {
       try {
@@ -137,48 +215,67 @@ export class PlayYoutubeItemCommand {
       return;
     }
 
-    try {
-      await this.youtubeSearchService.downloadTrack(tracks[0] as YoutubeTrack);
-    } catch {
+    if (dto.mode == Mode.Shuffle) {
+      tracks = tracks
+        .map((value) => ({ value, sort: Math.random() }))
+        .sort((a, b) => a.sort - b.sort)
+        .map(({ value }) => value);
+    }
+
+    if (dto.position == Position.PlayNext) {
+      this.playbackService.enqueueNext(guild.id, tracks);
+    } else {
+      this.playbackService.enqueue(guild.id, tracks);
+    }
+
+    if (tracks.length === 1) {
+      const embed = new EmbedBuilder()
+        .setTitle('Added song to the queue')
+        .setDescription(trimStringToFixedLength(tracks[0].name, 50))
+        .setFields(
+          {
+            name: 'Channel',
+            value: trimStringToFixedLength(tracks[0].artist, 50),
+            inline: true,
+          },
+          {
+            name: 'Duration',
+            value: lightFormat(tracks[0].getDuration(), 'mm:ss'),
+            inline: true,
+          },
+        )
+        .setColor(DefaultJellyfinColor)
+        .setImage(tracks[0].imageURL)
+        .setURL((tracks[0] as YoutubeTrack).playURL);
+
+      await interaction.editReply({
+        embeds: [embed],
+      });
+    } else {
+      const reducedDuration = tracks.reduce(
+        (sum, item) => sum + item.duration,
+        0,
+      );
+      const totalLength = this.playbackService.getQueueLength(guild.id);
+
       await interaction.editReply({
         embeds: [
-          this.discordMessageService.buildErrorMessage({
-            title: 'Unable to get track from youtube',
-            description:
-              'There is might something to do with youtube, You should report this!',
+          this.discordMessageService.buildMessage({
+            title: `Added ${
+              tracks.length
+            } tracks (${formatMillisecondsAsHumanReadable(
+              reducedDuration,
+            )}) to your queue`,
+            description: `You have ${totalLength} tracks (${formatMillisecondsAsHumanReadable(
+              reducedDuration,
+            )}) in this queue`,
+            mixin(embedBuilder) {
+              return embedBuilder.setImage(tracks[0].imageURL);
+            },
           }),
         ],
       });
     }
-
-    if (dto.position == Position.EndOfQueue) {
-      this.playbackService.enqueue(guild.id, tracks);
-    } else {
-      this.playbackService.enqueueNext(guild.id, tracks);
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle('Added song to the queue')
-      .setDescription(trimStringToFixedLength(tracks[0].name, 50))
-      .setFields(
-        {
-          name: 'Channel',
-          value: trimStringToFixedLength(tracks[0].artist, 50),
-          inline: true,
-        },
-        {
-          name: 'Duration',
-          value: lightFormat(tracks[0].getDuration(), 'mm:ss'),
-          inline: true,
-        },
-      )
-      .setColor(DefaultJellyfinColor)
-      .setImage(tracks[0].imageURL)
-      .setURL((tracks[0] as YoutubeTrack).playURL);
-
-    await interaction.editReply({
-      embeds: [embed],
-    });
   }
 
   @On(Events.InteractionCreate)

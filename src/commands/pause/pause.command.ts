@@ -34,7 +34,7 @@ export class PausePlaybackCommand {
       await interaction.reply({
         embeds: [
           this.discordMessageService.buildErrorMessage({
-            title: 'Player is not playing anything',
+            title: 'There is nothing playing right now.',
           }),
         ],
       });

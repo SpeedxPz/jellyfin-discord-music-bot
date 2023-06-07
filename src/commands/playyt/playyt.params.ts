@@ -5,6 +5,16 @@ export enum Position {
   PlayNext = 1,
 }
 
+export enum Mode {
+  Normal = 0,
+  Shuffle = 1,
+}
+
+export enum SearchType {
+  Audio = 0,
+  Playlist = 1,
+}
+
 export class PlayYoutubeCommandParams {
   @Param({
     required: true,
@@ -12,6 +22,21 @@ export class PlayYoutubeCommandParams {
     autocomplete: true,
   })
   name: string;
+
+  @Choice(SearchType)
+  @Param({
+    description: 'Desire the link type (only works with youtube link)',
+    type: ParamType.INTEGER,
+  })
+  type: SearchType | undefined;
+
+  @Choice(Mode)
+  @Param({
+    description:
+      'How the track should be add (Only works with youtube playlist)',
+    type: ParamType.INTEGER,
+  })
+  mode: Mode | undefined;
 
   @Choice(Position)
   @Param({

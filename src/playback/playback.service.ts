@@ -12,8 +12,12 @@ import { NoNextTrackToPlay } from './exception/no-next-track-to-play.exception';
 import { NoPreviousTrackToPlay } from './exception/no-prev-track-to-play.exception';
 import { JellyfinWebSocketService } from 'src/clients/jellyfin/jellyfin.websocket.service';
 import { PlaybackEnqueueEvent } from 'src/models/playback/PlaybackEnqueueEvent';
-import { YoutubeTrack } from 'src/models/shared/YoutubeTrack';
+import {
+  YoutubeTrack,
+  YoutubeTrackState,
+} from 'src/models/shared/YoutubeTrack';
 import { getEnvironmentVariables } from 'src/utils/environment';
+import { YoutubeSearchService } from 'src/clients/youtube/youtube.search.service';
 
 @Injectable()
 export class PlaybackService {
@@ -25,6 +29,7 @@ export class PlaybackService {
     private readonly jellyfinService: JellyfinService,
     private readonly jellyfinStreamBuilder: JellyfinStreamBuilderService,
     private readonly jellyfinWebsocketService: JellyfinWebSocketService,
+    private readonly youtubeSearchService: YoutubeSearchService,
   ) {
     this.instances = {};
   }
@@ -131,6 +136,37 @@ export class PlaybackService {
       throw new NoPreviousTrackToPlay();
     }
 
+    this.startTrack(guildId, track);
+  }
+
+  private async startTrack(guildId: string, track: Track): Promise<void> {
+    const instance = this.getOrCreatePlaybackInstance(guildId);
+
+    if (track instanceof YoutubeTrack) {
+      if (track.state === YoutubeTrackState.None) {
+        this.logger.debug(`[${guildId}] Start downloading ${track.name}...`);
+        try {
+          await this.youtubeSearchService.downloadTrack(track);
+        } catch {
+          this.logger.debug(`[${guildId}] ${track.name} cannot be played.`);
+          this.eventEmitter.emit('playback.command.next', guildId);
+        }
+      } else if (track.state === YoutubeTrackState.Downloading) {
+        this.logger.debug(
+          `[${guildId}] Waiting track ${track.name} to be ready...`,
+        );
+        setTimeout(() => {
+          this.startTrack(guildId, track);
+        }, 1000);
+        return;
+      } else if (track.state === YoutubeTrackState.Error) {
+        this.logger.debug(`[${guildId}] ${track.name} cannot be played.`);
+        this.eventEmitter.emit('playback.command.next', guildId);
+        return;
+      }
+    }
+
+    this.logger.debug(`[${guildId}] start playing ${track.name}`);
     const streamURL = this.createStreamURL(guildId, track);
 
     instance.playing = true;
@@ -150,7 +186,7 @@ export class PlaybackService {
         160000,
       );
     } else if (track instanceof YoutubeTrack) {
-      return `./cache/yt_${track.id}.mp3`;
+      return `${getEnvironmentVariables().CACHE_PATH}/yt_${track.id}.mp3`;
     } else {
       return '';
     }
@@ -169,15 +205,7 @@ export class PlaybackService {
       throw new NoNextTrackToPlay();
     }
 
-    const streamURL = this.createStreamURL(guildId, track);
-
-    instance.playing = true;
-    instance.pause = false;
-
-    this.eventEmitter.emit(
-      'discord.audioplayer.play',
-      new DiscordPlayEvent(guildId, track, streamURL),
-    );
+    this.startTrack(guildId, track);
   }
 
   goto(guildId: string, trackNo: number) {
@@ -192,15 +220,7 @@ export class PlaybackService {
       throw new NoNextTrackToPlay();
     }
 
-    const streamURL = this.createStreamURL(guildId, track);
-
-    instance.playing = true;
-    instance.pause = false;
-
-    this.eventEmitter.emit(
-      'discord.audioplayer.play',
-      new DiscordPlayEvent(guildId, track, streamURL),
-    );
+    this.startTrack(guildId, track);
   }
 
   private playNext(guildId: string) {
@@ -285,6 +305,23 @@ export class PlaybackService {
   handleOnDiscordAudioProgress(event: DiscordProgressEvent) {
     const instance = this.getOrCreatePlaybackInstance(event.guildId);
     instance.progress = event.progress;
+
+    const nextTrack = instance.queue.getNextTrack();
+    if (
+      nextTrack &&
+      nextTrack.duration != 0 &&
+      nextTrack instanceof YoutubeTrack
+    ) {
+      if (
+        nextTrack.duration - instance.progress <= 30000 &&
+        nextTrack.state === YoutubeTrackState.None
+      ) {
+        this.logger.debug(
+          `[${event.guildId}] Start pre-download next track ${nextTrack.name}...`,
+        );
+        this.youtubeSearchService.downloadTrack(nextTrack);
+      }
+    }
   }
 
   getQueueTracks(guildId: string): Track[] {
