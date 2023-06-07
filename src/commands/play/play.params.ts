@@ -33,7 +33,8 @@ export class PlayCommandParams {
 
   @Choice(Mode)
   @Param({
-    description: 'How the track should be add',
+    description:
+      'How the track should be add (Only works with album or playlist)',
     type: ParamType.INTEGER,
   })
   mode: Mode | undefined;

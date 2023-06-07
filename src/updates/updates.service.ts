@@ -4,7 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import axios from 'axios';
 import { formatRelative, parseISO } from 'date-fns';
-import { ActionRowBuilder, ButtonStyle, Client, Guild } from 'discord.js';
+import { ActionRowBuilder, ButtonStyle, Client } from 'discord.js';
 import { DiscordMessageService } from '../clients/discord/discord.message.service';
 import { GithubRelease } from '../models/github-release';
 import { Constants } from '../utils/constants';

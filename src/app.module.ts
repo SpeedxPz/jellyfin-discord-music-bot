@@ -41,7 +41,7 @@ import { PlaybackModule } from './playback/playback.module';
     }),
     DiscordModule,
     EventEmitterModule.forRoot(),
-    CommandModule,
+    CommandModule.register(),
     DiscordClientModule,
     JellyfinClientModule,
     PlaybackModule,

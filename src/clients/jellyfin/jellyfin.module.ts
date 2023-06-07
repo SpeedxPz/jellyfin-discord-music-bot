@@ -4,6 +4,7 @@ import { JellyfinSearchService } from './jellyfin.search.service';
 import { JellyfinService } from './jellyfin.service';
 import { JellyfinStreamBuilderService } from './jellyfin.stream.builder.service';
 import { JellyfinWebSocketService } from './jellyfin.websocket.service';
+import { getEnvironmentVariables } from 'src/utils/environment';
 
 @Module({
   imports: [],
@@ -26,10 +27,14 @@ export class JellyfinClientModule implements OnModuleInit, OnModuleDestroy {
   constructor(private jellyfinService: JellyfinService) {}
 
   onModuleDestroy() {
-    this.jellyfinService.disconnectGracefully();
+    if (getEnvironmentVariables().JELLYFIN_ENABLED) {
+      this.jellyfinService.disconnectGracefully();
+    }
   }
 
   onModuleInit() {
-    this.jellyfinService.init('0', 'Main');
+    if (getEnvironmentVariables().JELLYFIN_ENABLED) {
+      this.jellyfinService.init('0', 'Main');
+    }
   }
 }

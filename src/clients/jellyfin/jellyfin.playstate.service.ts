@@ -64,6 +64,7 @@ export class JellyinPlaystateService {
   private async onPlaybackNewTrack(event: DiscordPlayEvent) {
     const jellyfin = this.getOrCreateJellyfinSession(event.guild_id);
     if (!jellyfin.initialized) return;
+
     if (event.track instanceof JellyfinTrack) {
       this.logger.debug(
         `Reporting playback start on track '${event.track.id}'`,
@@ -83,7 +84,8 @@ export class JellyinPlaystateService {
   @OnEvent('discord.audioplayer.event.play.stopped')
   private async onPlaybackFinished(guildId: string) {
     const jellyfin = this.getOrCreateJellyfinSession(guildId);
-    if (!jellyfin.initialized) return;
+    if (!jellyfin.initialized || !jellyfin.track) return;
+
     this.logger.debug(
       `Reporting playback finish on track '${jellyfin.track.id}'`,
     );
@@ -100,7 +102,8 @@ export class JellyinPlaystateService {
   @OnEvent('discord.audioplayer.event.paused')
   private async onPlaybackPause(guildId: string) {
     const jellyfin = this.getOrCreateJellyfinSession(guildId);
-    if (!jellyfin.initialized) return;
+    if (!jellyfin.initialized || !jellyfin.track) return;
+
     if (!jellyfin.track) {
       this.logger.error(
         'Unable to report changed playstate to Jellyfin because no track was active',
@@ -124,12 +127,7 @@ export class JellyinPlaystateService {
   private async onPlaybackResume(guildId: string) {
     const jellyfin = this.getOrCreateJellyfinSession(guildId);
     if (!jellyfin.initialized) return;
-    if (!jellyfin.track) {
-      this.logger.error(
-        'Unable to report changed playstate to Jellyfin because no track was active',
-      );
-      return;
-    }
+    if (!jellyfin.track) return;
 
     try {
       jellyfin.isPause = false;
@@ -146,7 +144,7 @@ export class JellyinPlaystateService {
   @OnEvent('discord.audioplayer.event.play.progress')
   handleOnDiscordAudioProgress(event: DiscordProgressEvent) {
     const jellyfin = this.getOrCreateJellyfinSession(event.guildId);
-    if (!jellyfin.initialized) return;
+    if (!jellyfin.initialized || !jellyfin.track) return;
 
     // Update only every 5 seconds.
     const currentDateTime = new Date();

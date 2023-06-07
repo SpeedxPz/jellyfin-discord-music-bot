@@ -14,3 +14,10 @@ export const trimStringToFixedLength = (value: string, maxLength: number) => {
 
 export const zeroPad = (num: number, places: number) =>
   String(num).padStart(places, '0');
+
+export const emptyOrDash = (value: string) => {
+  if (value.length <= 0) {
+    return '-';
+  }
+  return value;
+};
