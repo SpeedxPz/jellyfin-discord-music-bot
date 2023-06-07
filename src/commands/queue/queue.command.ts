@@ -38,6 +38,7 @@ import { defaultMemberPermissions } from 'src/utils/environment';
 import { QueueCommandParams } from './queue.params';
 import { QueueTempCommandData } from './queue.types';
 import { QueueInteractionCollector } from './queue.interaction-collector';
+import { DefaultJellyfinColor, InactiveColor } from 'src/types/colors';
 
 @Injectable()
 @Command({
@@ -87,9 +88,9 @@ export class QueueCommand {
         `Removed the components of message from interaction '${interaction.id}' because the event collector has reachted the timeout`,
       );
       this.pageData.delete(interaction.id);
-      await interaction.editReply({
-        components: [],
-      });
+      await interaction.editReply(
+        this.getReplyForPage(guild.id, page, false) as InteractionReplyOptions,
+      );
     }, 5 * 60 * 1000);
   }
 
@@ -136,6 +137,7 @@ export class QueueCommand {
   public getReplyForPage(
     guildId: string,
     page: number,
+    isActive = true,
   ): InteractionReplyOptions | InteractionUpdateOptions {
     const chunks = this.getChunks(guildId);
 
@@ -172,7 +174,7 @@ export class QueueCommand {
           this.discordMessageService.buildMessage({
             title: 'Your Queue',
             description:
-              'You do not have any tracks in your queue.\nUse the ``/play`` command to add new tracks to your queue',
+              'You do not have any tracks in your queue.\nStart play something to display the queue',
           }),
         ],
         ephemeral: false,
@@ -198,9 +200,13 @@ export class QueueCommand {
     );
 
     return {
-      embeds: [contentForPage.toJSON()],
+      embeds: [
+        contentForPage
+          .setColor(isActive ? DefaultJellyfinColor : InactiveColor)
+          .toJSON(),
+      ],
       ephemeral: false,
-      components: [rowBuilder],
+      components: isActive ? [rowBuilder] : [],
       fetchReply: true,
     };
   }

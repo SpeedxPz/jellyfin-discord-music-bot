@@ -85,6 +85,28 @@ export class PlayQueue {
   }
 
   /**
+   * get next track in the queue
+   * @returns if have next track will return the track otherwise undefined
+   */
+  getNextTrack(): Track | undefined {
+    if (this.tracks.length === 0) {
+      return undefined;
+    }
+
+    const nextTrackIndex = this.activeTrackIndex + 1;
+
+    if (nextTrackIndex >= this.tracks.length) {
+      return undefined;
+    }
+
+    if (this.activeTrackIndex === -1) {
+      return undefined;
+    }
+
+    return this.tracks[nextTrackIndex];
+  }
+
+  /**
    * get current active track number in queue
    * @returns active track number in the queue
    */

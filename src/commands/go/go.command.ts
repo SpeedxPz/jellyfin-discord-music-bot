@@ -9,7 +9,7 @@ import { GoTrackCommandParams } from './go.params';
 
 @Command({
   name: 'go',
-  description: 'Go to the specific tracks, Use track number from queue command',
+  description: 'Go to the specific tracks in the queue by track number',
   defaultMemberPermissions: defaultMemberPermissions,
 })
 @Injectable()
@@ -30,7 +30,7 @@ export class GoTrackCommand {
       await interaction.reply({
         embeds: [
           this.discordMessageService.buildMessage({
-            title: `Go to track ${dto.track_no}`,
+            title: `Start playing track ${dto.track_no}`,
           }),
         ],
       });
@@ -38,7 +38,7 @@ export class GoTrackCommand {
       await interaction.reply({
         embeds: [
           this.discordMessageService.buildErrorMessage({
-            title: 'There is no track you want',
+            title: 'Your specify track does not exists',
           }),
         ],
       });

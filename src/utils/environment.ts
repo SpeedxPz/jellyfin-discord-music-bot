@@ -38,6 +38,10 @@ export const environmentVariablesSchema = z.object({
     .default('false')
     .transform((value) => value === 'true'),
   YOUTUBE_SEARCH_API_KEY: z.string().default(''),
+  YOUTUBE_APIS_BASE_URL: z
+    .string()
+    .default('https://www.googleapis.com/youtube/v3/'),
+  CACHE_PATH: z.string().default('./cache'),
 });
 
 export const getEnvironmentVariables = () => {

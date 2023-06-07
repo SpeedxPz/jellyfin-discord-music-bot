@@ -28,7 +28,8 @@ import { defaultMemberPermissions } from 'src/utils/environment';
 import { PlayCommandParams, SearchType, Mode, Position } from './play.params';
 import { Track } from 'src/models/shared/Track';
 import { NotInVoiceException } from 'src/clients/discord/exception/not-in-voice.exception';
-import { trimStringToFixedLength } from 'src/utils/stringUtils/stringUtils';
+import { emptyOrDash, trimStringToFixedLength } from 'src/utils/stringUtils/stringUtils';
+import { lightFormat } from 'date-fns';
 
 @Injectable()
 @Command({
@@ -145,35 +146,72 @@ export class PlayItemCommand {
         .map(({ value }) => value);
     }
 
-    if (dto.position == Position.EndOfQueue) {
-      this.playbackService.enqueue(guild.id, tracks);
-    } else {
+    if (dto.position == Position.PlayNext) {
       this.playbackService.enqueueNext(guild.id, tracks);
+    } else {
+      this.playbackService.enqueue(guild.id, tracks);
     }
 
     const totalLength = this.playbackService.getQueueLength(guild.id);
 
-    await interaction.followUp({
-      embeds: [
-        this.discordMessageService.buildMessage({
-          title: `Added ${
-            tracks.length
-          } tracks (${formatMillisecondsAsHumanReadable(
-            reducedDuration,
-          )}) to your queue`,
-          description: `You have ${totalLength} tracks (${formatMillisecondsAsHumanReadable(
-            reducedDuration,
-          )}) in this queue`,
-          mixin(embedBuilder) {
-            if (!image) {
-              return embedBuilder;
-            }
-            return embedBuilder.setThumbnail(image);
-          },
-        }),
-      ],
-      ephemeral: false,
-    });
+    if (tracks.length === 1) {
+      const embed = this.discordMessageService.buildMessage({
+        title: `Added song to the queue`,
+        description: trimStringToFixedLength(tracks[0].name, 50),
+        mixin(embedBuilder) {
+          return embedBuilder.setThumbnail(image).setFields(
+            {
+              name: 'Album',
+              value: emptyOrDash(trimStringToFixedLength(tracks[0].album, 50)),
+              inline: false,
+            },
+            {
+              name: 'Artist',
+              value: emptyOrDash(trimStringToFixedLength(tracks[0].artist, 50)),
+              inline: false,
+            },
+            {
+              name: 'Playing',
+              value: lightFormat(
+                this.playbackService.getPlaybackProgress(guild.id),
+                'mm:ss',
+              ),
+              inline: true,
+            },
+            {
+              name: 'Duration',
+              value: lightFormat(tracks[0].getDuration(), 'mm:ss'),
+              inline: true,
+            },
+          );
+        },
+      });
+      await interaction.followUp({
+        embeds: [embed],
+        ephemeral: false,
+      });
+    } else {
+      const embed = this.discordMessageService.buildMessage({
+        title: `Added ${
+          tracks.length
+        } tracks (${formatMillisecondsAsHumanReadable(
+          reducedDuration,
+        )}) to your queue`,
+        description: `You have ${totalLength} tracks (${formatMillisecondsAsHumanReadable(
+          reducedDuration,
+        )}) in this queue`,
+        mixin(embedBuilder) {
+          if (!image) {
+            return embedBuilder;
+          }
+          return embedBuilder.setThumbnail(image);
+        },
+      });
+      await interaction.followUp({
+        embeds: [embed],
+        ephemeral: false,
+      });
+    }
   }
 
   @On(Events.InteractionCreate)
