@@ -28,7 +28,10 @@ import { defaultMemberPermissions } from 'src/utils/environment';
 import { PlayCommandParams, SearchType, Mode, Position } from './play.params';
 import { Track } from 'src/models/shared/Track';
 import { NotInVoiceException } from 'src/clients/discord/exception/not-in-voice.exception';
-import { emptyOrDash, trimStringToFixedLength } from 'src/utils/stringUtils/stringUtils';
+import {
+  emptyOrDash,
+  trimStringToFixedLength,
+} from 'src/utils/stringUtils/stringUtils';
 import { lightFormat } from 'date-fns';
 
 @Injectable()
@@ -171,17 +174,9 @@ export class PlayItemCommand {
               inline: false,
             },
             {
-              name: 'Playing',
-              value: lightFormat(
-                this.playbackService.getPlaybackProgress(guild.id),
-                'mm:ss',
-              ),
-              inline: true,
-            },
-            {
               name: 'Duration',
               value: lightFormat(tracks[0].getDuration(), 'mm:ss'),
-              inline: true,
+              inline: false,
             },
           );
         },
