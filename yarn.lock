@@ -494,12 +494,11 @@
   version "0.1.3"
   resolved "https://registry.npmjs.org/@istanbuljs/schema/-/schema-0.1.3.tgz"
 
-"@jellyfin/sdk@^0.7.0":
-  version "0.7.0"
-  resolved "https://registry.npmjs.org/@jellyfin/sdk/-/sdk-0.7.0.tgz"
+"@jellyfin/sdk@^0.8.2":
+  version "0.8.2"
+  resolved "https://registry.yarnpkg.com/@jellyfin/sdk/-/sdk-0.8.2.tgz#25635e64eec7d49808ef366d12bb5af7e3e196b0"
   dependencies:
-    axios "0.27.2"
-    compare-versions "5.0.1"
+    compare-versions "5.0.3"
 
 "@jest/console@^29.5.0":
   version "29.5.0"
@@ -1499,13 +1498,6 @@ asynckit@^0.4.0:
   version "0.4.0"
   resolved "https://registry.npmjs.org/asynckit/-/asynckit-0.4.0.tgz"
 
-axios@0.27.2:
-  version "0.27.2"
-  resolved "https://registry.npmjs.org/axios/-/axios-0.27.2.tgz"
-  dependencies:
-    follow-redirects "^1.14.9"
-    form-data "^4.0.0"
-
 axios@^1.4.0:
   version "1.4.0"
   resolved "https://registry.npmjs.org/axios/-/axios-1.4.0.tgz"
@@ -1873,9 +1865,9 @@ commander@^2.20.0:
   version "2.20.3"
   resolved "https://registry.npmjs.org/commander/-/commander-2.20.3.tgz"
 
-compare-versions@5.0.1:
-  version "5.0.1"
-  resolved "https://registry.npmjs.org/compare-versions/-/compare-versions-5.0.1.tgz"
+compare-versions@5.0.3:
+  version "5.0.3"
+  resolved "https://registry.yarnpkg.com/compare-versions/-/compare-versions-5.0.3.tgz#a9b34fea217472650ef4a2651d905f42c28ebfd7"
 
 component-emitter@^1.3.0:
   version "1.3.0"
@@ -2464,7 +2456,7 @@ flatted@^3.1.0:
   version "3.2.7"
   resolved "https://registry.npmjs.org/flatted/-/flatted-3.2.7.tgz"
 
-follow-redirects@^1.14.9, follow-redirects@^1.15.0:
+follow-redirects@^1.15.0:
   version "1.15.2"
   resolved "https://registry.npmjs.org/follow-redirects/-/follow-redirects-1.15.2.tgz"
 
