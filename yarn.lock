@@ -802,11 +802,11 @@
     multer "1.4.4-lts.1"
     tslib "2.5.2"
 
-"@nestjs/schedule@^2.1.0":
-  version "2.2.1"
-  resolved "https://registry.npmjs.org/@nestjs/schedule/-/schedule-2.2.1.tgz"
+"@nestjs/schedule@^3.0.2":
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/@nestjs/schedule/-/schedule-3.0.2.tgz#0be6ff93adfedf081b216a2c69a70ea69a6acf78"
   dependencies:
-    cron "2.3.0"
+    cron "2.4.0"
     uuid "9.0.0"
 
 "@nestjs/schematics@^9.0.4", "@nestjs/schematics@^9.1.0":
@@ -1949,9 +1949,9 @@ create-require@^1.1.0:
   version "1.1.1"
   resolved "https://registry.npmjs.org/create-require/-/create-require-1.1.1.tgz"
 
-cron@2.3.0:
-  version "2.3.0"
-  resolved "https://registry.npmjs.org/cron/-/cron-2.3.0.tgz"
+cron@2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/cron/-/cron-2.4.0.tgz#bdb2fcf896c072ba9dbc2f932ccd6daf3ad243b5"
   dependencies:
     luxon "^3.2.1"
 
