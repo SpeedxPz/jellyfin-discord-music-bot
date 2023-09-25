@@ -802,12 +802,12 @@
     multer "1.4.4-lts.1"
     tslib "2.5.2"
 
-"@nestjs/schedule@^2.1.0":
-  version "2.2.1"
-  resolved "https://registry.npmjs.org/@nestjs/schedule/-/schedule-2.2.1.tgz"
+"@nestjs/schedule@^3.0.4":
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/@nestjs/schedule/-/schedule-3.0.4.tgz#c2a3d96bb2cb7d562349f030823080b8513b34c3"
   dependencies:
-    cron "2.3.0"
-    uuid "9.0.0"
+    cron "2.4.3"
+    uuid "9.0.1"
 
 "@nestjs/schematics@^9.0.4", "@nestjs/schematics@^9.1.0":
   version "9.1.0"
@@ -1052,6 +1052,10 @@
 "@types/luxon@*":
   version "3.3.0"
   resolved "https://registry.npmjs.org/@types/luxon/-/luxon-3.3.0.tgz"
+
+"@types/luxon@~3.3.0":
+  version "3.3.2"
+  resolved "https://registry.yarnpkg.com/@types/luxon/-/luxon-3.3.2.tgz#f6e3524c2486b949a4db445e85d93c8e9886dfe2"
 
 "@types/mime@*":
   version "3.0.1"
@@ -1949,11 +1953,12 @@ create-require@^1.1.0:
   version "1.1.1"
   resolved "https://registry.npmjs.org/create-require/-/create-require-1.1.1.tgz"
 
-cron@2.3.0:
-  version "2.3.0"
-  resolved "https://registry.npmjs.org/cron/-/cron-2.3.0.tgz"
+cron@2.4.3:
+  version "2.4.3"
+  resolved "https://registry.yarnpkg.com/cron/-/cron-2.4.3.tgz#4e43d8d9a6373b8f28d876c4e9a47c14422d8652"
   dependencies:
-    luxon "^3.2.1"
+    "@types/luxon" "~3.3.0"
+    luxon "~3.3.0"
 
 cross-spawn@^7.0.0, cross-spawn@^7.0.2, cross-spawn@^7.0.3:
   version "7.0.3"
@@ -3401,9 +3406,9 @@ lru-cache@^9.0.0:
   version "9.0.1"
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-9.0.1.tgz"
 
-luxon@^3.2.1:
+luxon@~3.3.0:
   version "3.3.0"
-  resolved "https://registry.npmjs.org/luxon/-/luxon-3.3.0.tgz"
+  resolved "https://registry.yarnpkg.com/luxon/-/luxon-3.3.0.tgz#d73ab5b5d2b49a461c47cedbc7e73309b4805b48"
 
 macos-release@^2.5.0:
   version "2.5.1"
@@ -4542,9 +4547,13 @@ utils-merge@1.0.1:
   version "1.0.1"
   resolved "https://registry.npmjs.org/utils-merge/-/utils-merge-1.0.1.tgz"
 
-uuid@9.0.0, uuid@^9.0.0:
+uuid@9.0.0:
   version "9.0.0"
   resolved "https://registry.npmjs.org/uuid/-/uuid-9.0.0.tgz"
+
+uuid@9.0.1, uuid@^9.0.0:
+  version "9.0.1"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.1.tgz#e188d4c8853cc722220392c424cd637f32293f30"
 
 v8-compile-cache-lib@^3.0.1:
   version "3.0.1"
