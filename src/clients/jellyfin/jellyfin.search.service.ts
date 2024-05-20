@@ -105,14 +105,12 @@ export class JellyfinSearchService {
   }
 
   private audioHint2SearchHint(hint: JellySearchHint): SearchHint {
-    const schema = z
-      .object({
-        Id: z.string(),
-        Name: z.string(),
-        AlbumArtist: z.string(),
-        RunTimeTicks: z.number(),
-      })
-      .partial();
+    const schema = z.object({
+      Id: z.string(),
+      Name: z.string(),
+      AlbumArtist: z.string().nullable(),
+      RunTimeTicks: z.number(),
+    });
     const result = schema.safeParse(hint);
 
     if (!result.success) {
