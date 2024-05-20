@@ -1,4 +1,4 @@
-FROM node:16.14.2-alpine3.15 as builder
+FROM node:20.13.1-alpine3.18 as builder
 RUN apk add --no-cache --virtual bash git g++ make py3-pip
 WORKDIR /usr/src/app
 COPY package*.json ./
@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 
-FROM node:16.14.2-alpine3.15
+FROM node:20.13.1-alpine3.18
 RUN apk add ffmpeg python3
 
 COPY --from=builder /usr/src/app/ /usr/src/app/
