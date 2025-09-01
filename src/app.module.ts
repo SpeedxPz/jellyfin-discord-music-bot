@@ -40,7 +40,10 @@ import { PlaybackModule } from './playback/playback.module';
       useClass: DiscordConfigService,
     }),
     DiscordModule,
-    EventEmitterModule.forRoot(),
+    EventEmitterModule.forRoot({
+      maxListeners: 50,
+      verboseMemoryLeak: false,
+    }),
     CommandModule.register(),
     DiscordClientModule,
     JellyfinClientModule,

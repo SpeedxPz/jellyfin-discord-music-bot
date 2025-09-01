@@ -257,6 +257,6 @@ export class PlayItemCommand {
       };
     });
 
-    await interaction.respond(hintList);
+    await interaction.respond(hintList.slice(0, 25));
   }
 }

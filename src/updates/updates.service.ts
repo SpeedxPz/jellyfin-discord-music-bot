@@ -101,7 +101,7 @@ export class UpdatesService {
             },
           }),
         ],
-        components: [actionRow],
+        components: [actionRow.toJSON()],
       });
     }
   }
