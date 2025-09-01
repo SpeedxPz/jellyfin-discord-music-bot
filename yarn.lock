@@ -374,7 +374,7 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@discord-nestjs/common@^5.2.5":
+"@discord-nestjs/common@5.2.5":
   version "5.2.5"
   resolved "https://registry.npmjs.org/@discord-nestjs/common/-/common-5.2.5.tgz"
   integrity sha512-sVtXLb1wIiUXOaleLidDC5wfdQrP3DyCjIfQaYgzuoIJPKFAs3FQs0Q43DGXqWj6qeyTaZEr+JgwhYYO4Ju5Ww==
@@ -383,7 +383,7 @@
     class-transformer "0.5.1"
     class-validator "0.14.0"
 
-"@discord-nestjs/core@*", "@discord-nestjs/core@^5.3.7":
+"@discord-nestjs/core@*", "@discord-nestjs/core@5.3.7":
   version "5.3.7"
   resolved "https://registry.npmjs.org/@discord-nestjs/core/-/core-5.3.7.tgz"
   integrity sha512-wJMNeUAh0ZzN+Q0NAexPsd9oXSE/L/YrBd6/vWmd4t0NF0SgrwOqu5roh7IaB8Q040Ysh7wTqhFvEfHn8PMzhQ==
@@ -430,7 +430,7 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@discordjs/opus@^0.9.0", "@discordjs/opus@>=0.8.0 <1.0.0":
+"@discordjs/opus@>=0.8.0 <1.0.0", "@discordjs/opus@0.9.0":
   version "0.9.0"
   resolved "https://registry.npmjs.org/@discordjs/opus/-/opus-0.9.0.tgz"
   integrity sha512-NEE76A96FtQ5YuoAVlOlB3ryMPrkXbUCTQICHGKb8ShtjXyubGicjRMouHtP1RpuDdm16cDa+oI3aAMo1zQRUQ==
@@ -457,7 +457,7 @@
   resolved "https://registry.npmjs.org/@discordjs/util/-/util-0.3.1.tgz"
   integrity sha512-HxXKYKg7vohx2/OupUN/4Sd02Ev3PBJ5q0gtjdcvXb0ErCva8jNHWfe/v5sU3UKjIB/uxOhc+TDOnhqffj9pRA==
 
-"@discordjs/voice@^0.16.0":
+"@discordjs/voice@0.16.0":
   version "0.16.0"
   resolved "https://registry.npmjs.org/@discordjs/voice/-/voice-0.16.0.tgz"
   integrity sha512-ToGCvHD1cBscuW3p+C7zOF5+L7MJmU4GjdOARfNk9mkHyFFZq4grK+Sxr3QXKbp27DtfDBc9uqD4GUOYgxngfA==
@@ -2379,7 +2379,7 @@ discord-api-types@^0.37.37, discord-api-types@^0.37.41:
   resolved "https://registry.npmjs.org/discord-api-types/-/discord-api-types-0.37.42.tgz"
   integrity sha512-1Huaj9cQ1W7/uryS8MZs/tZemnoKB94thM1cE40lep3rpU3q7WHqkdjN/veX0prTkYlPhcyLd/DeF/pBO8X8oQ==
 
-discord.js@^14.11.0, discord.js@14.*:
+discord.js@14.*, discord.js@14.11.0:
   version "14.11.0"
   resolved "https://registry.npmjs.org/discord.js/-/discord.js-14.11.0.tgz"
   integrity sha512-CkueWYFQ28U38YPR8HgsBR/QT35oPpMbEsTNM30Fs8loBIhnA4s70AwQEoy6JvLcpWWJO7GY0y2BUzZmuBMepQ==
@@ -3841,14 +3841,14 @@ libphonenumber-js@^1.10.14:
   resolved "https://registry.npmjs.org/libphonenumber-js/-/libphonenumber-js-1.10.26.tgz"
   integrity sha512-oB3l4J5gEhMV+ymmlIjWedsbCpsNRqbEZ/E/MpN2QVyinKNra6DcuXywxSk/72M3DZDoH/6kzurOq1erznBMwQ==
 
-libsodium-wrappers@^0.7.10:
-  version "0.7.11"
-  resolved "https://registry.npmjs.org/libsodium-wrappers/-/libsodium-wrappers-0.7.11.tgz"
-  integrity sha512-SrcLtXj7BM19vUKtQuyQKiQCRJPgbpauzl3s0rSwD+60wtHqSUuqcoawlMDheCJga85nKOQwxNYQxf/CKAvs6Q==
+libsodium-wrappers@0.7.10:
+  version "0.7.10"
+  resolved "https://registry.npmjs.org/libsodium-wrappers/-/libsodium-wrappers-0.7.10.tgz"
+  integrity sha512-pO3F1Q9NPLB/MWIhehim42b/Fwb30JNScCNh8TcQ/kIc+qGLQch8ag8wb0keK3EP5kbGakk1H8Wwo7v+36rNQg==
   dependencies:
-    libsodium "^0.7.11"
+    libsodium "^0.7.0"
 
-libsodium@^0.7.11:
+libsodium@^0.7.0:
   version "0.7.11"
   resolved "https://registry.npmjs.org/libsodium/-/libsodium-0.7.11.tgz"
   integrity sha512-WPfJ7sS53I2s4iM58QxY3Inb83/6mjlYgcmZs7DJsvDlnmVUwNinBCi5vBT43P6bHRy01O4zsMU2CoVR6xJ40A==
@@ -4254,7 +4254,7 @@ opusscript@^0.0.8:
   resolved "https://registry.npmjs.org/opusscript/-/opusscript-0.0.8.tgz"
   integrity sha512-VSTi1aWFuCkRCVq+tx/BQ5q9fMnQ9pVZ3JU4UHKqTkf0ED3fKEPdr+gKAAl3IA2hj9rrP6iyq3hlcJq3HELtNQ==
 
-opusscript@^0.1.0:
+opusscript@0.1.0:
   version "0.1.0"
   resolved "https://registry.npmjs.org/opusscript/-/opusscript-0.1.0.tgz"
   integrity sha512-Jc1d2u7AutNcUCoSpshhStW4CVAZXqh8n832ZTFUwZowof+xq2JW4umsWwAUOdtczn2z0UJMkUoTYBFT8qto9g==
@@ -4598,7 +4598,7 @@ rechoir@^0.6.2:
   dependencies:
     resolve "^1.1.6"
 
-reflect-metadata@^0.1.12, reflect-metadata@^0.1.13, reflect-metadata@0.1.x:
+reflect-metadata@^0.1.12, reflect-metadata@^0.1.13, reflect-metadata@0.1.13, reflect-metadata@0.1.x:
   version "0.1.13"
   resolved "https://registry.npmjs.org/reflect-metadata/-/reflect-metadata-0.1.13.tgz"
   integrity sha512-Ts1Y/anZELhSsjMcU605fU9RE4Oi3p5ORujwbIKXfWa+0Zxs510Qrmrce5/Jowq3cHSZSJqBjypxmHarc+vEWg==

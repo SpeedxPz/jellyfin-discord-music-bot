@@ -206,7 +206,7 @@ export class QueueCommand {
           .toJSON(),
       ],
       ephemeral: false,
-      components: isActive ? [rowBuilder] : [],
+      components: isActive ? [rowBuilder.toJSON()] : [],
       fetchReply: true,
     };
   }
