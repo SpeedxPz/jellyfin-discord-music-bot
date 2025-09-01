@@ -7,6 +7,7 @@ import {
   AudioPlayerStatus,
   getVoiceConnections,
   createAudioResource,
+  DiscordGatewayAdapterCreator,
 } from '@discordjs/voice';
 import { Injectable, Logger } from '@nestjs/common';
 import { DiscordMessageService } from './discord.message.service';
@@ -133,7 +134,8 @@ export class DiscordVoiceService {
 
     joinVoiceChannel({
       channelId: channel.id,
-      adapterCreator: channel.guild.voiceAdapterCreator,
+      adapterCreator: channel.guild
+        .voiceAdapterCreator as DiscordGatewayAdapterCreator,
       guildId: channel.guildId,
     });
 

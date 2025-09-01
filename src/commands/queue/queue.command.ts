@@ -19,6 +19,7 @@ import {
   EmbedBuilder,
   Guild,
   InteractionCollector,
+  InteractionEditReplyOptions,
   InteractionReplyOptions,
   InteractionUpdateOptions,
 } from 'discord.js';
@@ -89,7 +90,7 @@ export class QueueCommand {
       );
       this.pageData.delete(interaction.id);
       await interaction.editReply(
-        this.getReplyForPage(guild.id, page, false) as InteractionReplyOptions,
+        this.getReplyForPage(guild.id, page, false) as InteractionEditReplyOptions,
       );
     }, 5 * 60 * 1000);
   }
@@ -112,7 +113,10 @@ export class QueueCommand {
 
       const guild = interaction.guild as Guild;
       await interaction.editReply(
-        this.getReplyForPage(guild.id, tempData.page),
+        this.getReplyForPage(
+          guild.id,
+          tempData.page,
+        ) as InteractionEditReplyOptions,
       );
     }, 2000);
   }
@@ -129,7 +133,10 @@ export class QueueCommand {
       const guild = value.interaction.guild as Guild;
 
       await value.interaction.editReply(
-        this.getReplyForPage(guild.id, value.page),
+        this.getReplyForPage(
+          guild.id,
+          value.page,
+        ) as InteractionEditReplyOptions,
       );
     });
   }

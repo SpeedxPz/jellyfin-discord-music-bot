@@ -7,6 +7,7 @@ import {
   CommandInteraction,
   EmbedBuilder,
   Guild,
+  InteractionEditReplyOptions,
   InteractionReplyOptions,
   InteractionUpdateOptions,
 } from 'discord.js';
@@ -51,7 +52,9 @@ export class PlayingCommand {
       this.logger.log(
         `Remove interval update from '${interaction.id}' because the event collector has reachted the timeout`,
       );
-      await interaction.editReply(this.getReplyForPlaying(guild.id, false));
+      await interaction.editReply(
+        this.getReplyForPlaying(guild.id, false) as InteractionEditReplyOptions,
+      );
       this.data.delete(interaction.id);
     }, 5 * 60 * 1000);
   }
@@ -68,7 +71,7 @@ export class PlayingCommand {
       const guild = value.interaction.guild as Guild;
 
       await value.interaction.editReply(
-        this.getReplyForPlaying(guild.id, true),
+        this.getReplyForPlaying(guild.id, true) as InteractionEditReplyOptions,
       );
     });
   }
