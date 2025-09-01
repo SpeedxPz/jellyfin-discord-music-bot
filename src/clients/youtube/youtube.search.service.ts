@@ -172,45 +172,46 @@ export class YoutubeSearchService {
       return thumbnail.default.url;
     }
   }
-  
 
   async doUpdate(): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      let currentTime = Date.now()
-      if ((this.updateTimestamp + 259200000) < currentTime) { //Older than 3 days
+      const currentTime = Date.now();
+      if (this.updateTimestamp + 259200000 < currentTime) {
+        //Older than 3 days
         if (this.isUpdating) {
-          console.log("Already updating, Wait for update to be finished");
-          var timer = setInterval(() => { if(!this.isUpdating) {
-            clearInterval(timer);
-            resolve()
-          } }, 200);
+          console.log('Already updating, Wait for update to be finished');
+          const timer = setInterval(() => {
+            if (!this.isUpdating) {
+              clearInterval(timer);
+              resolve();
+            }
+          }, 200);
         } else {
           console.log('Update is required, Doing update');
           try {
             this.isUpdating = true;
             await this.updateBinary();
             this.isUpdating = false;
-            this.updateTimestamp = currentTime
+            this.updateTimestamp = currentTime;
             console.log('Update completed');
             return resolve();
-          } catch(e) {
+          } catch (e) {
             this.isUpdating = false;
             return reject(e);
           }
         }
-      } else { // Update not required
+      } else {
+        // Update not required
         return resolve();
       }
-    })
+    });
   }
 
   async updateBinary(): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const isWin = process.platform === 'win32';
       const toolPath: string = join('./bin', isWin ? 'yt-dlp.exe' : 'yt-dlp');
-      const toolFlags: string[] = [
-        `-U`,
-      ];
+      const toolFlags: string[] = [`-U`];
       const child = spawn(toolPath, toolFlags);
       child.stdout.on('data', (data: string) => console.log(`${data}`));
       child.stderr.on('data', (data: string) => console.log(`${data}`));
@@ -221,7 +222,7 @@ export class YoutubeSearchService {
           return resolve();
         }
       });
-    })
+    });
   }
 
   async downloadTrack(track: YoutubeTrack): Promise<string> {
