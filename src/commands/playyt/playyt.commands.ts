@@ -328,7 +328,7 @@ export class PlayYoutubeItemCommand {
         };
       });
 
-      await interaction.respond(hintList);
+      await interaction.respond(hintList.slice(0, 25));
     } catch (e) {
       this.logger.error(
         `Youtube query error, might hit quota limit maybe: ${e}`,

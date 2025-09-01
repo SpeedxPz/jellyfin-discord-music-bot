@@ -43,8 +43,10 @@ export class PlaybackService {
 
   async init(guildId: string, guildName: string) {
     if (getEnvironmentVariables().JELLYFIN_ENABLED) {
-      await this.jellyfinService.init(guildId, guildName);
-      await this.jellyfinWebsocketService.initializeAndConnect(guildId);
+      if (!(guildId in this.instances)) {
+        await this.jellyfinService.init(guildId, guildName);
+        await this.jellyfinWebsocketService.initializeAndConnect(guildId);
+      }
     }
   }
 
@@ -146,6 +148,7 @@ export class PlaybackService {
       if (track.state === YoutubeTrackState.None) {
         this.logger.debug(`[${guildId}] Start downloading ${track.name}...`);
         try {
+          await this.youtubeSearchService.doUpdate();
           await this.youtubeSearchService.downloadTrack(track);
         } catch {
           this.logger.debug(`[${guildId}] ${track.name} cannot be played.`);
